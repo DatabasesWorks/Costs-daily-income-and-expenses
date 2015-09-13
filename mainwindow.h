@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QSqlTableModel>
+#include <QSqlRelationalTableModel>
 
 #include "databaseapi.h"
 
@@ -33,8 +34,17 @@ private:
     Ui::MainWindow *ui;
 
     SqliteDatabase *sqliteDb1;
+    QSqlTableModel *categoriesmodel;
+    QSqlRelationalTableModel *expensesmodel, *monthlyexpensesmodel;
 
-    QSqlTableModel *model;
+    bool isOpen;
+    QString dbfilename;
+
+    int openDatabase(QString fileName);
+
+    void writeSettings();
+    void readSettings();
+    void closeEvent(QCloseEvent *event);
 };
 
 #endif // MAINWINDOW_H

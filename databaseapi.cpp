@@ -4,6 +4,8 @@
 #include <QFile>
 #include <QSqlDatabase>
 #include <QSqlQuery>
+#include <QSqlError>
+#include <QDebug>
 
 SqliteDatabase::SqliteDatabase(QString dbFilename)
 {
@@ -20,11 +22,33 @@ int SqliteDatabase::CreateDatabase(QString dbFilename)
     db.setDatabaseName(dbFilename);
     db.open();
     QSqlQuery query;
-    query.exec("create table person "
+    if(!query.exec("create table expenses "
               "(id integer primary key, "
-              "firstname varchar(20), "
-              "lastname varchar(30), "
-              "age integer)");
+              "amount real, "
+              "date date, "
+              "description varchar(128), "
+              "what integer, "
+              "category integer, "
+              "payment integer)"
+               )
+            )
+        qDebug() << query.lastError();
+    if(!query.exec("create table monthlyexpenses "
+              "(id integer primary key, "
+              "amount real, "
+              "description varchar(128), "
+              "what integer, "
+              "category integer, "
+              "payment integer)"
+               )
+            )
+        qDebug() << query.lastError();
+    if(!query.exec("create table categories "
+              "(id integer primary key, "
+              "category varchar(128)) "
+               )
+            )
+        qDebug() << query.lastError();
     db.close();
 
     return 0;
