@@ -4,6 +4,9 @@
 #include <QtWidgets>
 #include <QSqlTableModel>
 #include <QSqlRelationalDelegate>
+#include <QSqlRecord>
+#include <QSqlField>
+#include <QSqlError>
 
 #include "databaseapi.h"
 
@@ -28,7 +31,10 @@ void MainWindow::writeSettings()
     settings.beginGroup("MainWindow");
     settings.setValue("size", size());
     settings.setValue("pos", pos());
+    settings.setValue("currentTab", ui->tabWidget->currentIndex());
     settings.endGroup();
+
+    ui->tabWidget->currentIndex();
 
     settings.beginGroup("Database");
     settings.setValue("isOpen", isOpen);
@@ -43,6 +49,7 @@ void MainWindow::readSettings()
     settings.beginGroup("MainWindow");
     resize(settings.value("size", QSize(400, 400)).toSize());
     move(settings.value("pos", QPoint(200, 200)).toPoint());
+    ui->tabWidget->setCurrentIndex(settings.value("currentTab").toInt());
     settings.endGroup();
 
     settings.beginGroup("Database");
@@ -81,6 +88,8 @@ int MainWindow::openDatabase(QString fileName)
     expensesmodel->select();
     ui->expensesTableView->setModel(expensesmodel);
 
+    ui->expensesTableView->hideColumn(0); // Don't show id
+
     // get the table for monthlyexpenses
     monthlyexpensesmodel = new QSqlRelationalTableModel(this, sqliteDb1->db);
     monthlyexpensesmodel->setTable("monthlyexpenses");
@@ -88,12 +97,16 @@ int MainWindow::openDatabase(QString fileName)
     monthlyexpensesmodel->select();
     ui->monthlyExpensesTableView->setModel(monthlyexpensesmodel);
 
+    ui->monthlyExpensesTableView->hideColumn(0); // Don't show id
+
     // get the table for categories
     categoriesmodel = new QSqlTableModel(this, sqliteDb1->db);
     categoriesmodel->setTable("categories");
     categoriesmodel->setEditStrategy(QSqlTableModel::OnManualSubmit);
     categoriesmodel->select();
     ui->categoriesTableView->setModel(categoriesmodel);
+
+    ui->categoriesTableView->hideColumn(0); // Don't show id
 
     isOpen=true;
     dbfilename=fileName;
@@ -122,11 +135,23 @@ void MainWindow::on_actionNew_Database_triggered()
 void MainWindow::on_actionNew_Entry_triggered()
 {
     int row=0;
+
+    QDate date;
+
+    QString curdate = date.currentDate().toString("yyyy-MM-dd");
+    QSqlRecord rec;
+
     switch(ui->tabWidget->currentIndex())
     {
         case 0:
+            rec.append(QSqlField("amount", QVariant::Double));
+            rec.append(QSqlField("date", QVariant::String));
+            rec.append(QSqlField("category", QVariant::Int));
+            rec.setValue(0, 10.1f);
+            rec.setValue(1, curdate);
+            rec.setValue(2, 0);
             row = expensesmodel->rowCount();
-            expensesmodel->insertRows(row,1);
+            expensesmodel->insertRecord(row,rec);
             break;
         case 1:
             row = monthlyexpensesmodel->rowCount();
@@ -144,4 +169,15 @@ void MainWindow::on_actionSave_triggered()
     expensesmodel->submitAll();
     monthlyexpensesmodel->submitAll();
     categoriesmodel->submitAll();
+    qDebug() << expensesmodel->lastError();
+}
+
+void MainWindow::updateCalculations()
+{
+
+}
+
+void MainWindow::on_actionUpdate_triggered()
+{
+    updateCalculations();
 }

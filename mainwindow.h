@@ -21,14 +21,12 @@ public:
 
 private slots:
     void on_actionAbout_Costs_triggered();
-
     void on_actionOpen_Database_triggered();
-
     void on_actionNew_Database_triggered();
-
     void on_actionNew_Entry_triggered();
-
     void on_actionSave_triggered();
+
+    void on_actionUpdate_triggered();
 
 private:
     Ui::MainWindow *ui;
@@ -45,6 +43,8 @@ private:
     void writeSettings();
     void readSettings();
     void closeEvent(QCloseEvent *event);
+
+    void updateCalculations();
 };
 
 #endif // MAINWINDOW_H
