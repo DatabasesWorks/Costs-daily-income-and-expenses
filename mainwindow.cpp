@@ -10,11 +10,19 @@
 
 #include "databaseapi.h"
 
+#define STDSTATUSTIME 5000
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    // Disable database entry actions until database gets opened
+    ui->actionNew_Entry->setEnabled(false);
+    ui->actionDelete_Entry->setEnabled(false);
+    ui->actionSave->setEnabled(false);
+    ui->actionUpdate->setEnabled(false);
 
     readSettings();
     setupSignals();
@@ -29,10 +37,10 @@ MainWindow::~MainWindow()
 
 void MainWindow::setupSignals()
 {
+    QObject::connect(ui->actionQuit, SIGNAL(triggered()), this, SLOT(close()));
+
     QObject::connect(ui->tabWidget, &QTabWidget::currentChanged,
                      this, &MainWindow::checkMenubar);
-    QObject::connect(expensesmodel, &QSqlRelationalTableModel::dataChanged,
-                     this, &MainWindow::updateslot);
 }
 
 void MainWindow::updateslot()
@@ -79,11 +87,11 @@ void MainWindow::readSettings()
     settings.endGroup();
 
     settings.beginGroup("Database");
-    isOpen = settings.value("isOpen").toBool();
+    bool isOpenTmp = settings.value("isOpen").toBool();
     dbfilename = settings.value("dbfilename").toString();
     settings.endGroup();
 
-    if(isOpen)
+    if(isOpenTmp)
         openDatabase(dbfilename);
 
     checkMenubar();
@@ -91,24 +99,25 @@ void MainWindow::readSettings()
 
 bool MainWindow::askClose()
 {
-    if (expensesmodel->isDirty() || monthlyexpensesmodel->isDirty() || categoriesmodel->isDirty() ) {
-        QMessageBox::StandardButton ret;
-        ret = QMessageBox::warning(this, tr("Costs"),
-                     tr("The database has been modified.\n"
-                        "Do you want to save your changes?"),
-                     QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
-        if (ret == QMessageBox::Save) {
-            int sret = save();
-            if(sret == 0) {
-                return true;
-            }else{
-                return false;
+    if (isOpen)
+        if (expensesmodel->isDirty() || monthlyexpensesmodel->isDirty() || categoriesmodel->isDirty() ) {
+            QMessageBox::StandardButton ret;
+            ret = QMessageBox::warning(this, tr("Costs"),
+                         tr("The database has been modified.\n"
+                            "Do you want to save your changes?"),
+                         QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
+            if (ret == QMessageBox::Save) {
+                int sret = save();
+                if(sret == 0) {
+                    return true;
+                }else{
+                    return false;
+                }
             }
-        }
 
-        else if (ret == QMessageBox::Cancel)
-            return false;
-    }
+            else if (ret == QMessageBox::Cancel)
+                return false;
+        }
     return true;
 }
 
@@ -150,6 +159,10 @@ int MainWindow::createExpensesView()
     ui->expensesTableView->setModel(expensesmodel);
     ui->expensesTableView->hideColumn(0); // Don't show id
 
+    // Connect updateslot
+    QObject::connect(expensesmodel, &QSqlRelationalTableModel::dataChanged,
+                     this, &MainWindow::updateslot);
+
     return 0;
 }
 
@@ -172,6 +185,10 @@ int MainWindow::createMonthlyExpensesView()
     ui->monthlyExpensesTableView->setItemDelegate(new QSqlRelationalDelegate(ui->monthlyExpensesTableView));
     ui->monthlyExpensesTableView->hideColumn(0); // Don't show id
 
+    // Connect updateslot
+    QObject::connect(monthlyexpensesmodel, &QSqlRelationalTableModel::dataChanged,
+                     this, &MainWindow::updateslot);
+
     return 0;
 }
 
@@ -188,40 +205,60 @@ int MainWindow::createCategoriesView()
     ui->categoriesTableView->setModel(categoriesmodel);
     ui->categoriesTableView->hideColumn(0); // Don't show id
 
+    // Connect updateslot
+    QObject::connect(categoriesmodel, &QSqlRelationalTableModel::dataChanged,
+                     this, &MainWindow::updateslot);
+
     return 0;
 }
 
 int MainWindow::openDatabase(QString fileName)
 {
-    sqliteDb1 = new SqliteDatabase(fileName);
+    if(QFile(fileName).exists()){
+        sqliteDb1 = new SqliteDatabase(fileName);
 
-    //Show table for expenses
-    createExpensesView();
+        //Show table for expenses
+        createExpensesView();
 
-    // Show table for monthlyexpenses
-    createMonthlyExpensesView();
+        // Show table for monthlyexpenses
+        createMonthlyExpensesView();
 
-    // get the table for categories
-    createCategoriesView();
+        // get the table for categories
+        createCategoriesView();
 
-    isOpen=true;
-    dbfilename=fileName;
+        isOpen=true;
+        dbfilename=fileName;
 
-    this->setWindowTitle("Costs - "+ dbfilename);
+        // Update UI
+        this->setWindowTitle("Costs - "+ dbfilename);
+        ui->actionNew_Entry->setEnabled(true);
+        ui->actionDelete_Entry->setEnabled(true);
+        ui->actionSave->setEnabled(true);
+        ui->actionUpdate->setEnabled(true);
+        ui->statusBar->showMessage(tr("Database opened"), STDSTATUSTIME);
 
-    return 0;
+        return 0;
+    } else {
+        QMessageBox::warning(this, tr("Costs"),
+                             tr("Database cannot be opened: %1")
+                             .arg(fileName));
+        return 1;
+    }
+
 }
 
 void MainWindow::on_actionOpen_Database_triggered()
 {
-    QString fileName = QFileDialog::getOpenFileName(this);
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Open Database"),"",
+                                                    tr("SQLite DB (*.db)"));
     if (!fileName.isEmpty())
         openDatabase(fileName);
 }
 
 void MainWindow::on_actionNew_Database_triggered()
 {
-    QString fileName = QFileDialog::getSaveFileName(this);
+    QString fileName = QFileDialog::getSaveFileName(this, tr("New Database"),"",
+                                                    tr("SQLite DB (*.db)"));
     if (!fileName.isEmpty())
         SqliteDatabase::CreateDatabase(fileName);
 
@@ -237,23 +274,26 @@ void MainWindow::on_actionNew_Entry_triggered()
     QString curdate = date.currentDate().toString("yyyy-MM-dd");
     QSqlRecord rec;
 
+    // get first category id
+    int catid = categoriesmodel->record(0).value("id").toInt();
+
     switch(ui->tabWidget->currentIndex())
     {
         case 0:
             rec.append(QSqlField("amount", QVariant::Double));
             rec.append(QSqlField("date", QVariant::String));
             rec.append(QSqlField("category", QVariant::Int));
-            rec.setValue(0, 10.0);
+            rec.setValue(0, 0.0);
             rec.setValue(1, curdate);
-            rec.setValue(2, 1);
+            rec.setValue(2, catid);
             row = expensesmodel->rowCount();
             expensesmodel->insertRecord(row,rec);
             break;
         case 1:
             rec.append(QSqlField("amount", QVariant::Double));
             rec.append(QSqlField("category", QVariant::Int));
-            rec.setValue(0, 10.0);
-            rec.setValue(1, 1);
+            rec.setValue(0, 0.0);
+            rec.setValue(1, catid);
             row = monthlyexpensesmodel->rowCount();
             monthlyexpensesmodel->insertRecord(row,rec);
             break;
@@ -292,14 +332,18 @@ bool MainWindow::save()
 
 void MainWindow::updateCalculations()
 {
-    double total=0;
-    int rowcount = expensesmodel->rowCount();
-    for (int row=0; row < rowcount; row++)
-    {
-        total += expensesmodel->record(row).value("amount").toDouble();
+    if(isOpen) {
+        ui->statusBar->showMessage(tr("Calculating..."));
+        double total=0;
+        int rowcount = expensesmodel->rowCount();
+        for (int row=0; row < rowcount; row++)
+        {
+            total += expensesmodel->record(row).value("amount").toDouble();
+        }
+        calcres.total = total;
+        ui->totalCostsLine->setText(QString::number(total, 'f', 2));
+        ui->statusBar->showMessage(tr("Calculations updated"), STDSTATUSTIME);
     }
-    calcres.total = total;
-    ui->totalCostsLine->setText(QString::number(total, 'f', 2));
 }
 
 void MainWindow::on_actionUpdate_triggered()
@@ -319,6 +363,8 @@ void MainWindow::submit(QSqlRelationalTableModel *model)
                              .arg(model->lastError().text()));
     }
     model->select();
+
+    ui->statusBar->showMessage(tr("Database saved"), STDSTATUSTIME);
 }
 
 void MainWindow::on_actionDelete_Entry_triggered()
@@ -359,4 +405,18 @@ void MainWindow::on_actionDelete_Entry_triggered()
     }
 
     updateCalculations();
+}
+
+void MainWindow::on_actionFull_Screen_triggered()
+{
+    if(isFullScreen()) {
+        this->showNormal();
+    } else {
+        this->showFullScreen();
+    }
+}
+
+void MainWindow::on_actionQuit_triggered()
+{
+
 }

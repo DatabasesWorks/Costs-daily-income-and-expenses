@@ -14,9 +14,11 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    databaseapi.cpp
+    databaseapi.cpp \
+    datastatistics.cpp
 
 HEADERS  += mainwindow.h \
-    databaseapi.h
+    databaseapi.h \
+    datastatistics.h
 
 FORMS    += mainwindow.ui

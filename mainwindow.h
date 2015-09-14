@@ -37,6 +37,10 @@ private slots:
 
     void on_actionDelete_Entry_triggered();
 
+    void on_actionQuit_triggered();
+
+    void on_actionFull_Screen_triggered();
+
 private:
     CalcStruct calcres;
 
@@ -47,6 +51,8 @@ private:
 
     bool isOpen;
     QString dbfilename;
+
+    bool isFullscreen;
 
     bool save();
     bool askClose();
