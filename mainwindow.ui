@@ -54,7 +54,14 @@
         <item>
          <layout class="QGridLayout" name="gridLayout">
           <item row="1" column="1">
-           <widget class="QLineEdit" name="lineEdit"/>
+           <widget class="QLineEdit" name="totalCostsLine">
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+            <property name="placeholderText">
+             <string>total costs</string>
+            </property>
+           </widget>
           </item>
           <item row="1" column="2">
            <widget class="QLineEdit" name="lineEdit_2"/>
@@ -164,6 +171,8 @@
      <string>Tools</string>
     </property>
     <addaction name="separator"/>
+    <addaction name="actionEdit_Categories"/>
+    <addaction name="separator"/>
     <addaction name="actionSettings"/>
    </widget>
    <widget class="QMenu" name="menuWindow">
@@ -202,11 +211,13 @@
     <enum>TopToolBarArea</enum>
    </attribute>
    <attribute name="toolBarBreak">
-    <bool>false</bool>
+    <bool>true</bool>
    </attribute>
    <addaction name="actionNew_Entry"/>
+   <addaction name="actionDelete_Entry"/>
    <addaction name="actionSave"/>
    <addaction name="actionUpdate"/>
+   <addaction name="separator"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionOpen_Database">
@@ -290,6 +301,16 @@
   <action name="actionUpdate">
    <property name="text">
     <string>Update</string>
+   </property>
+  </action>
+  <action name="actionEdit_Categories">
+   <property name="text">
+    <string>Edit Categories...</string>
+   </property>
+  </action>
+  <action name="actionDelete_Entry">
+   <property name="text">
+    <string>Delete Entry</string>
    </property>
   </action>
  </widget>
