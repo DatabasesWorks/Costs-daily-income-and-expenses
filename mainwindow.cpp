@@ -26,8 +26,9 @@ MainWindow::MainWindow(QWidget *parent) :
 
     readSettings();
     setupSignals();
-    if(isOpen)
-        updateCalculations();
+
+//    if(isOpen)
+//        updateCalculations();
 }
 
 MainWindow::~MainWindow()
