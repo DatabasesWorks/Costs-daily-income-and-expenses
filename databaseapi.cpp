@@ -22,6 +22,7 @@ SqliteDatabase::~SqliteDatabase()
 void SqliteDatabase::close()
 {
     db.close();
+    db.removeDatabase(db.database().connectionName());
 }
 
 int SqliteDatabase::CreateDatabase(QString dbFilename)

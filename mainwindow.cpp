@@ -28,12 +28,21 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->actionDelete_Entry->setEnabled(false);
     ui->actionSave->setEnabled(false);
     ui->actionUpdate->setEnabled(false);
+    ui->actionClose_Database->setEnabled(false);
+    ui->actionEdit_Categories->setEnabled(false);
+    ui->actionEdit_Payment_Methods->setEnabled(false);
+
+    // Disable tableViews until database gets opened
+    ui->expensesTableView->setEnabled(false);
+    ui->monthlyExpensesTableView->setEnabled(false);
 
     readSettings();
     setupSignals();
 
-//    if(isOpen)
-//        updateCalculations();
+    qDebug() << "MainWindow(QWidget *parent) isOpen = " << isOpen;
+
+   // if(isOpen)
+   //     updateCalculations();
 
     ui->tabWidget->removeTab(3);
 
@@ -99,12 +108,14 @@ void MainWindow::readSettings()
     settings.endGroup();
 
     settings.beginGroup("Database");
-    bool isOpenTmp = settings.value("isOpen").toBool();
+    isOpen = settings.value("isOpen").toBool();
     dbfilename = settings.value("dbfilename").toString();
     settings.endGroup();
 
-    if(isOpenTmp)
+    if(isOpen) {
+        isOpen = false;
         openDatabase(dbfilename);
+    }
 
     checkMenubar();
 }
@@ -122,11 +133,10 @@ bool MainWindow::askClose()
                 int sret = save();
                 if(sret == 0) {
                     return true;
-                }else{
+                } else {
                     return false;
                 }
             }
-
             else if (ret == QMessageBox::Cancel)
                 return false;
         }
@@ -171,6 +181,8 @@ int MainWindow::createExpensesView()
     ui->expensesTableView->setModel(expensesmodel);
     ui->expensesTableView->hideColumn(0); // Don't show id
 
+    ui->expensesTableView->setEnabled(true);
+
     // Connect updateslot
     QObject::connect(expensesmodel, &QSqlRelationalTableModel::dataChanged,
                      this, &MainWindow::updateslot);
@@ -196,6 +208,8 @@ int MainWindow::createMonthlyExpensesView()
     ui->monthlyExpensesTableView->setModel(monthlyexpensesmodel);
     ui->monthlyExpensesTableView->setItemDelegate(new QSqlRelationalDelegate(ui->monthlyExpensesTableView));
     ui->monthlyExpensesTableView->hideColumn(0); // Don't show id
+
+    ui->monthlyExpensesTableView->setEnabled(true);
 
     // Connect updateslot
     QObject::connect(monthlyexpensesmodel, &QSqlRelationalTableModel::dataChanged,
@@ -229,32 +243,35 @@ int MainWindow::openDatabase(QString fileName)
 {
     if(QFile(fileName).exists()){
         sqliteDb1 = new SqliteDatabase(fileName);
+            //Show table for expenses
+            createExpensesView();
 
-        //Show table for expenses
-        createExpensesView();
+            // Show table for monthlyexpenses
+            createMonthlyExpensesView();
 
-        // Show table for monthlyexpenses
-        createMonthlyExpensesView();
+            // get the table for categories
+            createCategoriesView();
 
-        // get the table for categories
-        createCategoriesView();
+            isOpen=true;
+            dbfilename=fileName;
 
-        isOpen=true;
-        dbfilename=fileName;
+            // Update UI
+            this->setWindowTitle("Costs - "+ dbfilename);
+            ui->actionNew_Entry->setEnabled(true);
+            ui->actionDelete_Entry->setEnabled(true);
+            ui->actionSave->setEnabled(true);
+            ui->actionUpdate->setEnabled(true);
+            ui->actionClose_Database->setEnabled(true);
+            ui->actionEdit_Categories->setEnabled(true);
+            ui->actionEdit_Payment_Methods->setEnabled(true);
+            ui->statusBar->showMessage(tr("Database opened"), STDSTATUSTIME);
 
-        // Update UI
-        this->setWindowTitle("Costs - "+ dbfilename);
-        ui->actionNew_Entry->setEnabled(true);
-        ui->actionDelete_Entry->setEnabled(true);
-        ui->actionSave->setEnabled(true);
-        ui->actionUpdate->setEnabled(true);
-        ui->statusBar->showMessage(tr("Database opened"), STDSTATUSTIME);
-
-        return 0;
+            return 0;
     } else {
         QMessageBox::warning(this, tr("Costs"),
                              tr("Database cannot be opened: %1")
                              .arg(fileName));
+        isOpen = false;
         return 1;
     }
 
@@ -468,17 +485,28 @@ void MainWindow::on_actionToggle_Toolbar_triggered()
 
 void MainWindow::on_actionClose_Database_triggered()
 {
-    qDebug() << isOpen;
     if(isOpen) {
         if (askClose()) {
             sqliteDb1->close();
-            expensesmodel->select();
+            ui->expensesTableView->setEnabled(false);
+            ui->monthlyExpensesTableView->setEnabled(false);
+
             isOpen=false;
+
+            // Disable database entry actions until database gets opened
+            ui->actionNew_Entry->setEnabled(false);
+            ui->actionDelete_Entry->setEnabled(false);
+            ui->actionSave->setEnabled(false);
+            ui->actionUpdate->setEnabled(false);
+            ui->actionClose_Database->setEnabled(false);
+            ui->actionEdit_Categories->setEnabled(false);
+            ui->actionEdit_Payment_Methods->setEnabled(false);
+
+            ui->statusBar->showMessage(tr("Database closed"), STDSTATUSTIME);
         } else {
             // do nothing
         }
     }
-
 }
 
 void MainWindow::on_actionEdit_Payment_Methods_triggered()
