@@ -3,8 +3,9 @@
 
 #include <QMainWindow>
 #include <QSqlTableModel>
-#include <QSqlRelationalTableModel>
+// #include <QSqlRelationalTableModel>
 
+#include "myqsqlrelationaltablemodel.h"
 #include "databaseapi.h"
 
 namespace Ui {
@@ -19,8 +20,16 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
+    SqliteDatabase *sqliteDb1;
+
     struct CalcStruct {   // Declare struct to hold calculated results
         double total;
+    };
+
+    enum TabIDs {
+        expensesTabID,
+        monthlyExpensesTabID,
+        projectionsID
     };
 
 private slots:
@@ -41,13 +50,22 @@ private slots:
 
     void on_actionFull_Screen_triggered();
 
+    void on_actionEdit_Categories_triggered();
+
+    void on_actionToggle_Menubar_triggered();
+
+    void on_actionToggle_Toolbar_triggered();
+
+    void on_actionClose_Database_triggered();
+
+    void on_actionEdit_Payment_Methods_triggered();
+
 private:
     CalcStruct calcres;
 
     Ui::MainWindow *ui;
 
-    SqliteDatabase *sqliteDb1;
-    QSqlRelationalTableModel *expensesmodel, *monthlyexpensesmodel, *categoriesmodel;
+    MyQSqlRelationalTableModel *expensesmodel, *monthlyexpensesmodel, *categoriesmodel;
 
     bool isOpen;
     QString dbfilename;
@@ -67,7 +85,7 @@ private:
 
     void updateCalculations();
 
-    void submit(QSqlRelationalTableModel *model);
+    void submit(MyQSqlRelationalTableModel *model);
 
 
     int createExpensesView();

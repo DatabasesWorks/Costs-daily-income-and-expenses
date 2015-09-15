@@ -12,7 +12,15 @@ SqliteDatabase::SqliteDatabase(QString dbFilename)
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
     db.setDatabaseName(dbFilename);
     db.open();
+}
 
+SqliteDatabase::~SqliteDatabase()
+{
+    db.close();
+}
+
+void SqliteDatabase::close()
+{
     db.close();
 }
 
@@ -32,7 +40,7 @@ int SqliteDatabase::CreateDatabase(QString dbFilename)
               "payment integer)"
                )
             )
-        qDebug() << query.lastError();
+    qDebug() << query.lastError();
     if(!query.exec("create table monthlyexpenses "
               "(id integer primary key, "
               "amount real, "
@@ -42,13 +50,21 @@ int SqliteDatabase::CreateDatabase(QString dbFilename)
               "payment integer)"
                )
             )
-        qDebug() << query.lastError();
+    qDebug() << query.lastError();
     if(!query.exec("create table categories "
               "(id integer primary key, "
-              "category varchar(128)) "
+              "category varchar(128), "
+              "description varchar(128)) "
                )
             )
-        qDebug() << query.lastError();
+    qDebug() << query.lastError();
+    if(!query.exec("create table paymentmethods "
+              "(id integer primary key, "
+              "payment varchar(128), "
+              "description varchar(128)) "
+               )
+            )
+    qDebug() << query.lastError();
     db.close();
 
     return 0;

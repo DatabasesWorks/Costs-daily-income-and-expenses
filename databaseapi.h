@@ -9,9 +9,12 @@ class SqliteDatabase
 {
 public:
     SqliteDatabase(QString dbfilename);
+    ~SqliteDatabase();
     static int CreateDatabase(QString dbFilename);
 
     QSqlDatabase db;
+
+    void close();
 };
 
 #endif // DATABASEAPI_H

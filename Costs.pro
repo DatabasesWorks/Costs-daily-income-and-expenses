@@ -15,10 +15,18 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     databaseapi.cpp \
-    datastatistics.cpp
+    datastatistics.cpp \
+    categoryconfigdialog.cpp \
+    myqsqlrelationaltablemodel.cpp \
+    paymentmethodsconfigdialog.cpp
 
 HEADERS  += mainwindow.h \
     databaseapi.h \
-    datastatistics.h
+    datastatistics.h \
+    categoryconfigdialog.h \
+    myqsqlrelationaltablemodel.h \
+    paymentmethodsconfigdialog.h
 
-FORMS    += mainwindow.ui
+FORMS    += mainwindow.ui \
+    categoryconfigdialog.ui \
+    paymentmethodsconfigdialog.ui

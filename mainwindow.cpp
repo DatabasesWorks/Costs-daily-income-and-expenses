@@ -10,6 +10,11 @@
 
 #include "databaseapi.h"
 
+#include "myqsqlrelationaltablemodel.h"
+
+#include "categoryconfigdialog.h"
+#include "paymentmethodsconfigdialog.h"
+
 #define STDSTATUSTIME 5000
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -29,6 +34,12 @@ MainWindow::MainWindow(QWidget *parent) :
 
 //    if(isOpen)
 //        updateCalculations();
+
+    ui->tabWidget->removeTab(3);
+
+    QShortcut *shortcut = new QShortcut(QKeySequence(tr("Ctrl+M", "Window|Toggle Menubar")), this);
+    shortcut->setContext(Qt::ApplicationShortcut);
+    connect(shortcut, SIGNAL(activated()), this, SLOT(on_actionToggle_Menubar_triggered()));
 }
 
 MainWindow::~MainWindow()
@@ -51,12 +62,12 @@ void MainWindow::updateslot()
 
 void MainWindow::checkMenubar()
 {
-//    if( ui->tabWidget->currentIndex() == 2 )
-//    {
-//        ui->mainToolBar->hide();
-//    } else {
-//        ui->mainToolBar->show();
-//    }
+    if( ui->tabWidget->currentIndex() == projectionsID )
+    {
+        ui->mainToolBar->hide();
+    } else {
+        ui->mainToolBar->show();
+    }
 }
 
 void MainWindow::writeSettings()
@@ -142,9 +153,9 @@ void MainWindow::on_actionAbout_Costs_triggered()
 
 int MainWindow::createExpensesView()
 {
-    expensesmodel = new QSqlRelationalTableModel(this, sqliteDb1->db);
+    expensesmodel = new MyQSqlRelationalTableModel(this, sqliteDb1->db);
     expensesmodel->setTable("expenses");
-    expensesmodel->setEditStrategy(QSqlRelationalTableModel::OnManualSubmit);
+    expensesmodel->setEditStrategy(MyQSqlRelationalTableModel::OnManualSubmit);
     expensesmodel->setRelation(5, QSqlRelation("categories", "id", "category"));
     expensesmodel->select();
 
@@ -169,7 +180,7 @@ int MainWindow::createExpensesView()
 
 int MainWindow::createMonthlyExpensesView()
 {
-    monthlyexpensesmodel = new QSqlRelationalTableModel(this, sqliteDb1->db);
+    monthlyexpensesmodel = new MyQSqlRelationalTableModel(this, sqliteDb1->db);
     monthlyexpensesmodel->setTable("monthlyexpenses");
     monthlyexpensesmodel->setEditStrategy(QSqlRelationalTableModel::OnManualSubmit);
     monthlyexpensesmodel->setRelation(4, QSqlRelation("categories", "id", "category"));
@@ -195,13 +206,14 @@ int MainWindow::createMonthlyExpensesView()
 
 int MainWindow::createCategoriesView()
 {
-    categoriesmodel = new QSqlRelationalTableModel(this, sqliteDb1->db);
+    categoriesmodel = new MyQSqlRelationalTableModel(this, sqliteDb1->db);
     categoriesmodel->setTable("categories");
     categoriesmodel->setEditStrategy(QSqlTableModel::OnManualSubmit);
     categoriesmodel->select();
 
     categoriesmodel->setHeaderData(0, Qt::Horizontal, "ID");
     categoriesmodel->setHeaderData(1, Qt::Horizontal, "Category");
+    categoriesmodel->setHeaderData(2, Qt::Horizontal, "Description");
 
     ui->categoriesTableView->setModel(categoriesmodel);
     ui->categoriesTableView->hideColumn(0); // Don't show id
@@ -260,10 +272,10 @@ void MainWindow::on_actionNew_Database_triggered()
 {
     QString fileName = QFileDialog::getSaveFileName(this, tr("New Database"),"",
                                                     tr("SQLite DB (*.db)"));
-    if (!fileName.isEmpty())
+    if (!fileName.isEmpty()) {
         SqliteDatabase::CreateDatabase(fileName);
-
-    openDatabase(fileName);
+        openDatabase(fileName);
+    }
 }
 
 void MainWindow::on_actionNew_Entry_triggered()
@@ -276,6 +288,7 @@ void MainWindow::on_actionNew_Entry_triggered()
     QSqlRecord rec;
 
     // get first category id
+    categoriesmodel->select();
     int catid = categoriesmodel->record(0).value("id").toInt();
 
     switch(ui->tabWidget->currentIndex())
@@ -352,7 +365,7 @@ void MainWindow::on_actionUpdate_triggered()
     updateCalculations();
 }
 
-void MainWindow::submit(QSqlRelationalTableModel *model)
+void MainWindow::submit(MyQSqlRelationalTableModel *model)
 {
     model->database().transaction();
     if (model->submitAll()) {
@@ -420,4 +433,62 @@ void MainWindow::on_actionFull_Screen_triggered()
 void MainWindow::on_actionQuit_triggered()
 {
 
+}
+
+void MainWindow::on_actionEdit_Categories_triggered()
+{
+    // Open Category Edit dialog
+    CategoryConfigDialog *dialog = new CategoryConfigDialog;
+    dialog->createCategoriesView(sqliteDb1);
+    dialog->exec();
+
+    // Update database relations
+    expensesmodel->relationModel(5)->select();
+    monthlyexpensesmodel->relationModel(4)->select();
+}
+
+void MainWindow::on_actionToggle_Menubar_triggered()
+{
+    if(ui->menuBar->isHidden()) {
+        ui->menuBar->show();
+    } else {
+        ui->menuBar->hide();
+        ui->statusBar->showMessage(tr("Menubar hidden, press CTRL-M to show again"));
+    }
+}
+
+void MainWindow::on_actionToggle_Toolbar_triggered()
+{
+    if(ui->mainToolBar->isHidden()) {
+        ui->mainToolBar->show();
+    } else {
+        ui->mainToolBar->hide();
+    }
+ }
+
+void MainWindow::on_actionClose_Database_triggered()
+{
+    qDebug() << isOpen;
+    if(isOpen) {
+        if (askClose()) {
+            sqliteDb1->close();
+            expensesmodel->select();
+            isOpen=false;
+        } else {
+            // do nothing
+        }
+    }
+
+}
+
+void MainWindow::on_actionEdit_Payment_Methods_triggered()
+{
+    // Open Category Edit dialog
+    PaymentMethodsConfigDialog *dialog = new PaymentMethodsConfigDialog;
+    dialog->createPaymentsMethodView(sqliteDb1);
+    dialog->exec();
+
+    // Update database relations
+    // expensesmodel->relationModel(5)->select();
+    // monthlyexpensesmodel->relationModel(4)->select();
 }
