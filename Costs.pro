@@ -18,15 +18,18 @@ SOURCES += main.cpp\
     datastatistics.cpp \
     categoryconfigdialog.cpp \
     myqsqlrelationaltablemodel.cpp \
-    paymentmethodsconfigdialog.cpp
+    paymentmethodsconfigdialog.cpp \
+    databasedialog.cpp
 
 HEADERS  += mainwindow.h \
     databaseapi.h \
     datastatistics.h \
     categoryconfigdialog.h \
     myqsqlrelationaltablemodel.h \
-    paymentmethodsconfigdialog.h
+    paymentmethodsconfigdialog.h \
+    databasedialog.h
 
 FORMS    += mainwindow.ui \
     categoryconfigdialog.ui \
-    paymentmethodsconfigdialog.ui
+    paymentmethodsconfigdialog.ui \
+    databasedialog.ui

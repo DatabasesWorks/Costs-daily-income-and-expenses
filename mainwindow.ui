@@ -20,8 +20,14 @@
       <property name="tabPosition">
        <enum>QTabWidget::South</enum>
       </property>
+      <property name="tabShape">
+       <enum>QTabWidget::Rounded</enum>
+      </property>
       <property name="currentIndex">
        <number>0</number>
+      </property>
+      <property name="elideMode">
+       <enum>Qt::ElideNone</enum>
       </property>
       <property name="documentMode">
        <bool>false</bool>
@@ -36,6 +42,16 @@
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="earningsTab">
+       <attribute name="title">
+        <string>Earnings</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_6">
+        <item>
+         <widget class="QTableView" name="earningsTableView"/>
+        </item>
+       </layout>
+      </widget>
       <widget class="QWidget" name="monthlyExpensesTab">
        <attribute name="title">
         <string>Monthly Expenses</string>
@@ -43,6 +59,16 @@
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
          <widget class="QTableView" name="monthlyExpensesTableView"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="monthlyEarningsTab">
+       <attribute name="title">
+        <string>Monthly Earnings</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_7">
+        <item>
+         <widget class="QTableView" name="monthlyEarningsTableView"/>
         </item>
        </layout>
       </widget>

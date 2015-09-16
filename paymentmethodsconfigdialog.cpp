@@ -52,8 +52,8 @@ int PaymentMethodsConfigDialog::on_removeButton_clicked()
 {
     QMessageBox::StandardButton ret;
     ret = QMessageBox::warning(this, tr("Costs"),
-                 tr("Warning: A bug prevents expenses entries to show up if used categories are deleted.\n\n"
-                    "Are you sure you want to remove the selected categories?"),
+                 tr("Warning: A bug prevents expenses entries to show up if used payment methods are deleted.\n\n"
+                    "Are you sure you want to remove the selected payment methods?"),
                  QMessageBox::Ok | QMessageBox::Cancel);
     if (ret == QMessageBox::Ok) {
         QItemSelectionModel *selmodel;

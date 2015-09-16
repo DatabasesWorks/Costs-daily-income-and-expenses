@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QTableView>
 #include <QSqlTableModel>
 // #include <QSqlRelationalTableModel>
 
@@ -28,8 +29,11 @@ public:
 
     enum TabIDs {
         expensesTabID,
+        earningsTabID,
         monthlyExpensesTabID,
-        projectionsID
+        monthlyEarningsTabID,
+        projectionsID,
+        categoriesID
     };
 
 private slots:
@@ -60,6 +64,11 @@ private slots:
 
     void on_actionEdit_Payment_Methods_triggered();
 
+    void expensesRowHeaderChanged(Qt::Orientation orientation, int first,int last);
+    void earningsRowHeaderChanged(Qt::Orientation orientation, int first,int last);
+    void monthlyExpensesRowHeaderChanged(Qt::Orientation orientation, int first,int last);
+    void monthlyEarningsRowHeaderChanged(Qt::Orientation orientation, int first,int last);
+
 private:
     CalcStruct calcres;
 
@@ -87,10 +96,13 @@ private:
 
     void submit(MyQSqlRelationalTableModel *model);
 
+    void uhideAllRows(QTableView *view);
 
     int createExpensesView();
     int createMonthlyExpensesView();
     int createCategoriesView();
+
+    void openDatabaseDialog(QString &filename);
 };
 
 #endif // MAINWINDOW_H

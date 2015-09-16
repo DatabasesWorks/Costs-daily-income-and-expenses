@@ -7,6 +7,7 @@
 #include <QSqlRecord>
 #include <QSqlField>
 #include <QSqlError>
+#include <QTableView>
 
 #include "databaseapi.h"
 
@@ -14,6 +15,7 @@
 
 #include "categoryconfigdialog.h"
 #include "paymentmethodsconfigdialog.h"
+#include "databasedialog.h"
 
 #define STDSTATUSTIME 5000
 
@@ -44,11 +46,20 @@ MainWindow::MainWindow(QWidget *parent) :
    // if(isOpen)
    //     updateCalculations();
 
-    ui->tabWidget->removeTab(3);
+//    QString filename;
+//    if(!isOpen)
+//        openDatabaseDialog(filename);
 
-    QShortcut *shortcut = new QShortcut(QKeySequence(tr("Ctrl+M", "Window|Toggle Menubar")), this);
-    shortcut->setContext(Qt::ApplicationShortcut);
-    connect(shortcut, SIGNAL(activated()), this, SLOT(on_actionToggle_Menubar_triggered()));
+    ui->tabWidget->removeTab(categoriesID);
+
+    QObject::connect(expensesmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
+            this, SLOT(expensesRowHeaderChanged(Qt::Orientation,int,int)));
+//    QObject::connect(earningsmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
+//            this, SLOT(earningsRowHeaderChanged(Qt::Orientation,int,int)));
+    QObject::connect(monthlyexpensesmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
+            this, SLOT(monthlyExpensesRowHeaderChanged(Qt::Orientation,int,int)));
+//    QObject::connect(monthlyearningsmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
+//            this, SLOT(monthlyEarningsRowHeaderChanged(Qt::Orientation,int,int)));
 }
 
 MainWindow::~MainWindow()
@@ -69,6 +80,13 @@ void MainWindow::updateslot()
     updateCalculations();
 }
 
+void MainWindow::openDatabaseDialog(QString &filename) {
+    // Open Category Edit dialog
+    DatabaseDialog *dialog = new DatabaseDialog;
+    dialog->exec();
+    delete dialog; dialog=0;
+}
+
 void MainWindow::checkMenubar()
 {
     if( ui->tabWidget->currentIndex() == projectionsID )
@@ -76,6 +94,42 @@ void MainWindow::checkMenubar()
         ui->mainToolBar->hide();
     } else {
         ui->mainToolBar->show();
+    }
+}
+
+void MainWindow::expensesRowHeaderChanged(Qt::Orientation orientation, int first,int last)
+{
+    if(orientation == Qt::Vertical) {
+        for(int i=first; i<last+1; i++) {
+            ui->expensesTableView->hideRow(i);
+        }
+    }
+}
+
+void MainWindow::earningsRowHeaderChanged(Qt::Orientation orientation, int first,int last)
+{
+    if(orientation == Qt::Vertical) {
+        for(int i=first; i<last+1; i++) {
+            ui->earningsTableView->hideRow(i);
+        }
+    }
+}
+
+void MainWindow::monthlyExpensesRowHeaderChanged(Qt::Orientation orientation, int first,int last)
+{
+    if(orientation == Qt::Vertical) {
+        for(int i=first; i<last+1; i++) {
+            ui->monthlyExpensesTableView->hideRow(i);
+        }
+    }
+}
+
+void MainWindow::monthlyEarningsRowHeaderChanged(Qt::Orientation orientation, int first,int last)
+{
+    if(orientation == Qt::Vertical) {
+        for(int i=first; i<last+1; i++) {
+            ui->monthlyEarningsTableView->hideRow(i);
+        }
     }
 }
 
@@ -310,7 +364,7 @@ void MainWindow::on_actionNew_Entry_triggered()
 
     switch(ui->tabWidget->currentIndex())
     {
-        case 0:
+        case expensesTabID:
             rec.append(QSqlField("amount", QVariant::Double));
             rec.append(QSqlField("date", QVariant::String));
             rec.append(QSqlField("category", QVariant::Int));
@@ -320,7 +374,7 @@ void MainWindow::on_actionNew_Entry_triggered()
             row = expensesmodel->rowCount();
             expensesmodel->insertRecord(row,rec);
             break;
-        case 1:
+        case monthlyExpensesTabID:
             rec.append(QSqlField("amount", QVariant::Double));
             rec.append(QSqlField("category", QVariant::Int));
             rec.setValue(0, 0.0);
@@ -328,7 +382,7 @@ void MainWindow::on_actionNew_Entry_triggered()
             row = monthlyexpensesmodel->rowCount();
             monthlyexpensesmodel->insertRecord(row,rec);
             break;
-        case 3:
+        case categoriesID:
             row = categoriesmodel->rowCount();
             categoriesmodel->insertRows(row,1);
             expensesmodel->relationModel(5)->select();
@@ -337,14 +391,22 @@ void MainWindow::on_actionNew_Entry_triggered()
     updateCalculations();
 }
 
-
+void MainWindow::uhideAllRows(QTableView *view)
+{
+    for (int i=0; i<100;i++)
+    {
+        view->showRow(i);
+    }
+}
 
 void MainWindow::on_actionSave_triggered()
 {
     if( expensesmodel->isDirty() )
         submit(expensesmodel);
+        uhideAllRows(ui->expensesTableView);
     if( monthlyexpensesmodel->isDirty() )
         submit(monthlyexpensesmodel);
+        uhideAllRows(ui->monthlyExpensesTableView);
     if( categoriesmodel->isDirty() ) {
         submit(categoriesmodel);
         expensesmodel->relationModel(5)->select();
@@ -406,7 +468,7 @@ void MainWindow::on_actionDelete_Entry_triggered()
 
     switch(ui->tabWidget->currentIndex())
     {
-    case 0:
+    case expensesTabID:
         selmodel = ui->expensesTableView->selectionModel();
         current = selmodel->currentIndex();
         selected = selmodel->selectedIndexes(); // list of "selected" items
@@ -415,7 +477,7 @@ void MainWindow::on_actionDelete_Entry_triggered()
             expensesmodel->removeRows( selected.at(i).row(), 1);
         }
         break;
-    case 1:
+    case monthlyExpensesTabID:
         selmodel = ui->monthlyExpensesTableView->selectionModel();
         current = selmodel->currentIndex();
         selected = selmodel->selectedIndexes(); // list of "selected" items
@@ -424,7 +486,7 @@ void MainWindow::on_actionDelete_Entry_triggered()
             monthlyexpensesmodel->removeRows( selected.at(i).row(), 1);
         }
         break;
-    case 3:
+    case categoriesID:
         selmodel = ui->categoriesTableView->selectionModel();
         current = selmodel->currentIndex();
         selected = selmodel->selectedIndexes(); // list of "selected" items
