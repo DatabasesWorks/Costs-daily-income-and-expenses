@@ -45,12 +45,18 @@
          <property name="text">
           <string>Add Payment Method</string>
          </property>
+         <property name="icon">
+          <iconset theme="list-add"/>
+         </property>
         </widget>
        </item>
        <item>
         <widget class="QPushButton" name="removeButton">
          <property name="text">
           <string>Remove Payment Method</string>
+         </property>
+         <property name="icon">
+          <iconset theme="edit-delete"/>
          </property>
         </widget>
        </item>
@@ -71,6 +77,9 @@
         <widget class="QPushButton" name="saveButton">
          <property name="text">
           <string>Save</string>
+         </property>
+         <property name="icon">
+          <iconset theme="document-save"/>
          </property>
         </widget>
        </item>

@@ -5,6 +5,7 @@
 #include <QTableView>
 #include <QSqlTableModel>
 // #include <QSqlRelationalTableModel>
+#include <QList>
 
 #include "myqsqlrelationaltablemodel.h"
 #include "databaseapi.h"
@@ -74,7 +75,7 @@ private:
 
     Ui::MainWindow *ui;
 
-    MyQSqlRelationalTableModel *expensesmodel, *monthlyexpensesmodel, *categoriesmodel;
+    MyQSqlRelationalTableModel *expensesmodel, *monthlyexpensesmodel, *earningsmodel, *monthlyearningsmodel, *categoriesmodel;
 
     bool isOpen;
     QString dbfilename;
@@ -96,13 +97,17 @@ private:
 
     void submit(MyQSqlRelationalTableModel *model);
 
-    void uhideAllRows(QTableView *view);
+    void uhideAllRows(QTableView *view, QList<qint8> &rowList);
 
     int createExpensesView();
+    int createEarningsView();
     int createMonthlyExpensesView();
+    int createMonthlyEarningsView();
     int createCategoriesView();
 
     void openDatabaseDialog(QString &filename);
+
+    QList<qint8> expensesHiddenRows, monthlyExpensesHiddenRows, earningsHiddenRows, monthlyEarningsHiddenRows;
 };
 
 #endif // MAINWINDOW_H

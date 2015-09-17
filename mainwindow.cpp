@@ -37,6 +37,8 @@ MainWindow::MainWindow(QWidget *parent) :
     // Disable tableViews until database gets opened
     ui->expensesTableView->setEnabled(false);
     ui->monthlyExpensesTableView->setEnabled(false);
+    ui->earningsTableView->setEnabled(false);
+    ui->monthlyEarningsTableView->setEnabled(false);
 
     readSettings();
     setupSignals();
@@ -93,6 +95,7 @@ void MainWindow::expensesRowHeaderChanged(Qt::Orientation orientation, int first
     if(orientation == Qt::Vertical) {
         for(int i=first; i<last+1; i++) {
             ui->expensesTableView->hideRow(i);
+            expensesHiddenRows.append(i);
         }
     }
 }
@@ -102,6 +105,7 @@ void MainWindow::earningsRowHeaderChanged(Qt::Orientation orientation, int first
     if(orientation == Qt::Vertical) {
         for(int i=first; i<last+1; i++) {
             ui->earningsTableView->hideRow(i);
+            earningsHiddenRows.append(i);
         }
     }
 }
@@ -111,6 +115,7 @@ void MainWindow::monthlyExpensesRowHeaderChanged(Qt::Orientation orientation, in
     if(orientation == Qt::Vertical) {
         for(int i=first; i<last+1; i++) {
             ui->monthlyExpensesTableView->hideRow(i);
+            monthlyExpensesHiddenRows.append(i);
         }
     }
 }
@@ -120,6 +125,7 @@ void MainWindow::monthlyEarningsRowHeaderChanged(Qt::Orientation orientation, in
     if(orientation == Qt::Vertical) {
         for(int i=first; i<last+1; i++) {
             ui->monthlyEarningsTableView->hideRow(i);
+            monthlyEarningsHiddenRows.append(i);
         }
     }
 }
@@ -168,7 +174,9 @@ void MainWindow::readSettings()
 bool MainWindow::askClose()
 {
     if (isOpen)
-        if (expensesmodel->isDirty() || monthlyexpensesmodel->isDirty() || categoriesmodel->isDirty() ) {
+        if (expensesmodel->isDirty() || monthlyexpensesmodel->isDirty() ||
+            earningsmodel->isDirty() || monthlyearningsmodel->isDirty() ||
+            categoriesmodel->isDirty() ) {
             QMessageBox::StandardButton ret;
             ret = QMessageBox::warning(this, tr("Costs"),
                          tr("The database has been modified.\n"
@@ -245,6 +253,45 @@ int MainWindow::createExpensesView()
     return 0;
 }
 
+int MainWindow::createEarningsView()
+{
+    earningsmodel = new MyQSqlRelationalTableModel(this, sqliteDb1->db);
+    earningsmodel->setTable("earnings");
+    earningsmodel->setEditStrategy(MyQSqlRelationalTableModel::OnManualSubmit);
+    earningsmodel->setRelation(5, QSqlRelation("categories", "id", "category"));
+    earningsmodel->select();
+
+    earningsmodel->setHeaderData(0, Qt::Horizontal, "ID");
+    earningsmodel->setHeaderData(1, Qt::Horizontal, "Amount / EUR");
+    earningsmodel->setHeaderData(2, Qt::Horizontal, "Date");
+    earningsmodel->setHeaderData(3, Qt::Horizontal, "Description");
+    earningsmodel->setHeaderData(4, Qt::Horizontal, "What / Where");
+    earningsmodel->setHeaderData(5, Qt::Horizontal, "Category");
+    earningsmodel->setHeaderData(6, Qt::Horizontal, "Payment Method");
+
+    earningsmodel->setColColors(1,QColor(182, 215, 168, 255)); // set 'Amount' column color
+    earningsmodel->setColColors(5,QColor(239, 239, 239, 255)); // set 'Category' column color
+    earningsmodel->setColColors(6,QColor(239, 239, 239, 255)); // set 'Payment Method' column color
+
+    ui->earningsTableView->setItemDelegate(new QSqlRelationalDelegate(ui->earningsTableView));
+    ui->earningsTableView->setModel(earningsmodel);
+    ui->earningsTableView->hideColumn(0); // Don't show id
+    ui->earningsTableView->resizeColumnsToContents();
+
+    ui->earningsTableView->setEnabled(true);
+
+    // Connect updateslot
+    QObject::connect(earningsmodel, &QSqlRelationalTableModel::dataChanged,
+                     this, &MainWindow::updateslot);
+
+    QObject::connect(earningsmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
+            this, SLOT(earningsRowHeaderChanged(Qt::Orientation,int,int)));
+//    QObject::connect(earningsmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
+//            this, SLOT(earningsRowHeaderChanged(Qt::Orientation,int,int)));
+
+    return 0;
+}
+
 int MainWindow::createMonthlyExpensesView()
 {
     monthlyexpensesmodel = new MyQSqlRelationalTableModel(this, sqliteDb1->db);
@@ -283,6 +330,44 @@ int MainWindow::createMonthlyExpensesView()
     return 0;
 }
 
+int MainWindow::createMonthlyEarningsView()
+{
+    monthlyearningsmodel = new MyQSqlRelationalTableModel(this, sqliteDb1->db);
+    monthlyearningsmodel->setTable("monthlyearnings");
+    monthlyearningsmodel->setEditStrategy(QSqlRelationalTableModel::OnManualSubmit);
+    monthlyearningsmodel->setRelation(4, QSqlRelation("categories", "id", "category"));
+    monthlyearningsmodel->select();
+
+    monthlyearningsmodel->setHeaderData(0, Qt::Horizontal, "ID");
+    monthlyearningsmodel->setHeaderData(1, Qt::Horizontal, "Amount / EUR");
+    monthlyearningsmodel->setHeaderData(2, Qt::Horizontal, "Description");
+    monthlyearningsmodel->setHeaderData(3, Qt::Horizontal, "What / Where");
+    monthlyearningsmodel->setHeaderData(4, Qt::Horizontal, "Category");
+    monthlyearningsmodel->setHeaderData(5, Qt::Horizontal, "Payment Method");
+
+    monthlyearningsmodel->setColColors(1,QColor(182, 215, 168, 255)); // set 'Amount' column color
+    monthlyearningsmodel->setColColors(4,QColor(239, 239, 239, 255)); // set 'Category' column color
+    monthlyearningsmodel->setColColors(5,QColor(239, 239, 239, 255)); // set 'Payment Method' column color
+
+    ui->monthlyEarningsTableView->setModel(monthlyearningsmodel);
+    ui->monthlyEarningsTableView->setItemDelegate(new QSqlRelationalDelegate(ui->monthlyEarningsTableView));
+    ui->monthlyEarningsTableView->hideColumn(0); // Don't show id
+    ui->monthlyEarningsTableView->resizeColumnsToContents();
+
+    ui->monthlyEarningsTableView->setEnabled(true);
+
+    // Connect updateslot
+    QObject::connect(monthlyearningsmodel, &QSqlRelationalTableModel::dataChanged,
+                     this, &MainWindow::updateslot);
+
+    QObject::connect(monthlyearningsmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
+            this, SLOT(monthlyEarningsRowHeaderChanged(Qt::Orientation,int,int)));
+//    QObject::connect(monthlyearningsmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
+//            this, SLOT(monthlyEarningsRowHeaderChanged(Qt::Orientation,int,int)));
+
+    return 0;
+}
+
 int MainWindow::createCategoriesView()
 {
     categoriesmodel = new MyQSqlRelationalTableModel(this, sqliteDb1->db);
@@ -311,8 +396,14 @@ int MainWindow::openDatabase(QString fileName)
             //Show table for expenses
             createExpensesView();
 
+            //Show table for expenses
+            createEarningsView();
+
             // Show table for monthlyexpenses
             createMonthlyExpensesView();
+
+            // Show table for monthlyearnings
+            createMonthlyEarningsView();
 
             // get the table for categories
             createCategoriesView();
@@ -385,6 +476,16 @@ void MainWindow::on_actionNew_Entry_triggered()
             row = expensesmodel->rowCount();
             expensesmodel->insertRecord(row,rec);
             break;
+        case earningsTabID:
+            rec.append(QSqlField("amount", QVariant::Double));
+            rec.append(QSqlField("date", QVariant::String));
+            rec.append(QSqlField("category", QVariant::Int));
+            rec.setValue(0, 0.0);
+            rec.setValue(1, curdate);
+            rec.setValue(2, catid);
+            row = earningsmodel->rowCount();
+            earningsmodel->insertRecord(row,rec);
+            break;
         case monthlyExpensesTabID:
             rec.append(QSqlField("amount", QVariant::Double));
             rec.append(QSqlField("category", QVariant::Int));
@@ -392,6 +493,14 @@ void MainWindow::on_actionNew_Entry_triggered()
             rec.setValue(1, catid);
             row = monthlyexpensesmodel->rowCount();
             monthlyexpensesmodel->insertRecord(row,rec);
+            break;
+        case monthlyEarningsTabID:
+            rec.append(QSqlField("amount", QVariant::Double));
+            rec.append(QSqlField("category", QVariant::Int));
+            rec.setValue(0, 0.0);
+            rec.setValue(1, catid);
+            row = monthlyearningsmodel->rowCount();
+            monthlyearningsmodel->insertRecord(row,rec);
             break;
         case categoriesID:
             row = categoriesmodel->rowCount();
@@ -402,11 +511,12 @@ void MainWindow::on_actionNew_Entry_triggered()
     updateCalculations();
 }
 
-void MainWindow::uhideAllRows(QTableView *view)
+void MainWindow::uhideAllRows(QTableView *view, QList<qint8> &rowList)
 {
-    for (int i=0; i<100;i++)
-    {
-        view->showRow(i);
+    int row;
+    while(!rowList.isEmpty()) {
+        row = rowList.takeFirst();
+        view->showRow(row);
     }
 }
 
@@ -414,14 +524,22 @@ void MainWindow::on_actionSave_triggered()
 {
     if( expensesmodel->isDirty() )
         submit(expensesmodel);
-        uhideAllRows(ui->expensesTableView);
+        uhideAllRows(ui->expensesTableView, expensesHiddenRows);
+    if( earningsmodel->isDirty() )
+        submit(earningsmodel);
+        uhideAllRows(ui->earningsTableView, earningsHiddenRows);
     if( monthlyexpensesmodel->isDirty() )
         submit(monthlyexpensesmodel);
-        uhideAllRows(ui->monthlyExpensesTableView);
+        uhideAllRows(ui->monthlyExpensesTableView, monthlyExpensesHiddenRows);
+    if( monthlyearningsmodel->isDirty() )
+        submit(monthlyearningsmodel);
+        uhideAllRows(ui->monthlyEarningsTableView, monthlyEarningsHiddenRows);
     if( categoriesmodel->isDirty() ) {
         submit(categoriesmodel);
         expensesmodel->relationModel(5)->select();
+        earningsmodel->relationModel(5)->select();
         monthlyexpensesmodel->relationModel(4)->select();
+        monthlyearningsmodel->relationModel(4)->select();
     }
 
     updateCalculations();
@@ -488,6 +606,15 @@ void MainWindow::on_actionDelete_Entry_triggered()
             expensesmodel->removeRows( selected.at(i).row(), 1);
         }
         break;
+    case earningsTabID:
+        selmodel = ui->earningsTableView->selectionModel();
+        current = selmodel->currentIndex();
+        selected = selmodel->selectedIndexes(); // list of "selected" items
+        for (int i = 0; i < selected.size(); ++i) {
+            selected.at(i).row();
+            earningsmodel->removeRows( selected.at(i).row(), 1);
+        }
+        break;
     case monthlyExpensesTabID:
         selmodel = ui->monthlyExpensesTableView->selectionModel();
         current = selmodel->currentIndex();
@@ -495,6 +622,15 @@ void MainWindow::on_actionDelete_Entry_triggered()
         for (int i = 0; i < selected.size(); ++i) {
             selected.at(i).row();
             monthlyexpensesmodel->removeRows( selected.at(i).row(), 1);
+        }
+        break;
+    case monthlyEarningsTabID:
+        selmodel = ui->monthlyEarningsTableView->selectionModel();
+        current = selmodel->currentIndex();
+        selected = selmodel->selectedIndexes(); // list of "selected" items
+        for (int i = 0; i < selected.size(); ++i) {
+            selected.at(i).row();
+            monthlyearningsmodel->removeRows( selected.at(i).row(), 1);
         }
         break;
     case categoriesID:
@@ -534,7 +670,9 @@ void MainWindow::on_actionEdit_Categories_triggered()
 
     // Update database relations
     expensesmodel->relationModel(5)->select();
+    earningsmodel->relationModel(5)->select();
     monthlyexpensesmodel->relationModel(4)->select();
+    monthlyearningsmodel->relationModel(4)->select();
 }
 
 void MainWindow::on_actionToggle_Menubar_triggered()
@@ -562,7 +700,9 @@ void MainWindow::on_actionClose_Database_triggered()
         if (askClose()) {
             sqliteDb1->close();
             ui->expensesTableView->setEnabled(false);
+            ui->earningsTableView->setEnabled(false);
             ui->monthlyExpensesTableView->setEnabled(false);
+            ui->monthlyEarningsTableView->setEnabled(false);
 
             isOpen=false;
 

@@ -256,6 +256,11 @@
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionOpen_Database">
+   <property name="icon">
+    <iconset theme="document-open">
+     <normaloff/>
+    </iconset>
+   </property>
    <property name="text">
     <string>Open Database...</string>
    </property>
@@ -274,11 +279,21 @@
    </property>
   </action>
   <action name="actionContents">
+   <property name="icon">
+    <iconset theme="help-contents">
+     <normaloff/>
+    </iconset>
+   </property>
    <property name="text">
     <string>Contents</string>
    </property>
   </action>
   <action name="actionAbout_Costs">
+   <property name="icon">
+    <iconset theme="help-about">
+     <normaloff/>
+    </iconset>
+   </property>
    <property name="text">
     <string>About Costs...</string>
    </property>
@@ -297,34 +312,63 @@
    </property>
   </action>
   <action name="actionCut">
+   <property name="icon">
+    <iconset theme="edit-cut"/>
+   </property>
    <property name="text">
     <string>Cut</string>
    </property>
   </action>
   <action name="actionCopy">
+   <property name="icon">
+    <iconset theme="edit-copy">
+     <normaloff/>
+    </iconset>
+   </property>
    <property name="text">
     <string>Copy</string>
    </property>
   </action>
   <action name="actionPaste">
+   <property name="icon">
+    <iconset theme="edit-paste"/>
+   </property>
    <property name="text">
     <string>Paste</string>
    </property>
   </action>
   <action name="actionNew_Database">
+   <property name="icon">
+    <iconset theme="document-new">
+     <normaloff/>
+    </iconset>
+   </property>
    <property name="text">
     <string>New Database...</string>
    </property>
+   <property name="toolTip">
+    <string>Adds a New Database</string>
+   </property>
   </action>
   <action name="actionNew_Entry">
+   <property name="icon">
+    <iconset theme="list-add">
+     <normaloff/>
+    </iconset>
+   </property>
    <property name="text">
     <string>New Entry</string>
    </property>
    <property name="toolTip">
-    <string>Adds a row</string>
+    <string>Add New Entry</string>
    </property>
   </action>
   <action name="actionSave">
+   <property name="icon">
+    <iconset theme="document-save">
+     <normaloff/>
+    </iconset>
+   </property>
    <property name="text">
     <string>Save Database</string>
    </property>
@@ -333,8 +377,14 @@
    </property>
   </action>
   <action name="actionUpdate">
+   <property name="icon">
+    <iconset theme="view-refresh"/>
+   </property>
    <property name="text">
     <string>Update</string>
+   </property>
+   <property name="toolTip">
+    <string>Update Calculations</string>
    </property>
    <property name="shortcut">
     <string>F5</string>
@@ -346,11 +396,21 @@
    </property>
   </action>
   <action name="actionDelete_Entry">
+   <property name="icon">
+    <iconset theme="edit-delete">
+     <normaloff/>
+    </iconset>
+   </property>
    <property name="text">
     <string>Delete Entry</string>
    </property>
   </action>
   <action name="actionQuit">
+   <property name="icon">
+    <iconset theme="application-exit">
+     <normaloff/>
+    </iconset>
+   </property>
    <property name="text">
     <string>Exit</string>
    </property>
