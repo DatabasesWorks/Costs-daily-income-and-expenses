@@ -51,15 +51,6 @@ MainWindow::MainWindow(QWidget *parent) :
 //        openDatabaseDialog(filename);
 
     ui->tabWidget->removeTab(categoriesID);
-
-    QObject::connect(expensesmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
-            this, SLOT(expensesRowHeaderChanged(Qt::Orientation,int,int)));
-//    QObject::connect(earningsmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
-//            this, SLOT(earningsRowHeaderChanged(Qt::Orientation,int,int)));
-    QObject::connect(monthlyexpensesmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
-            this, SLOT(monthlyExpensesRowHeaderChanged(Qt::Orientation,int,int)));
-//    QObject::connect(monthlyearningsmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
-//            this, SLOT(monthlyEarningsRowHeaderChanged(Qt::Orientation,int,int)));
 }
 
 MainWindow::~MainWindow()
@@ -229,17 +220,27 @@ int MainWindow::createExpensesView()
     expensesmodel->setHeaderData(3, Qt::Horizontal, "Description");
     expensesmodel->setHeaderData(4, Qt::Horizontal, "What / Where");
     expensesmodel->setHeaderData(5, Qt::Horizontal, "Category");
-    expensesmodel->setHeaderData(6, Qt::Horizontal, "Payment");
+    expensesmodel->setHeaderData(6, Qt::Horizontal, "Payment Method");
+
+    expensesmodel->setColColors(1,QColor(182, 215, 168, 255)); // set 'Amount' column color
+    expensesmodel->setColColors(5,QColor(239, 239, 239, 255)); // set 'Category' column color
+    expensesmodel->setColColors(6,QColor(239, 239, 239, 255)); // set 'Payment Method' column color
 
     ui->expensesTableView->setItemDelegate(new QSqlRelationalDelegate(ui->expensesTableView));
     ui->expensesTableView->setModel(expensesmodel);
     ui->expensesTableView->hideColumn(0); // Don't show id
+    ui->expensesTableView->resizeColumnsToContents();
 
     ui->expensesTableView->setEnabled(true);
 
     // Connect updateslot
     QObject::connect(expensesmodel, &QSqlRelationalTableModel::dataChanged,
                      this, &MainWindow::updateslot);
+
+    QObject::connect(expensesmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
+            this, SLOT(expensesRowHeaderChanged(Qt::Orientation,int,int)));
+//    QObject::connect(earningsmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
+//            this, SLOT(earningsRowHeaderChanged(Qt::Orientation,int,int)));
 
     return 0;
 }
@@ -257,17 +258,27 @@ int MainWindow::createMonthlyExpensesView()
     monthlyexpensesmodel->setHeaderData(2, Qt::Horizontal, "Description");
     monthlyexpensesmodel->setHeaderData(3, Qt::Horizontal, "What / Where");
     monthlyexpensesmodel->setHeaderData(4, Qt::Horizontal, "Category");
-    monthlyexpensesmodel->setHeaderData(5, Qt::Horizontal, "Payment");
+    monthlyexpensesmodel->setHeaderData(5, Qt::Horizontal, "Payment Method");
+
+    monthlyexpensesmodel->setColColors(1,QColor(182, 215, 168, 255)); // set 'Amount' column color
+    monthlyexpensesmodel->setColColors(4,QColor(239, 239, 239, 255)); // set 'Category' column color
+    monthlyexpensesmodel->setColColors(5,QColor(239, 239, 239, 255)); // set 'Payment Method' column color
 
     ui->monthlyExpensesTableView->setModel(monthlyexpensesmodel);
     ui->monthlyExpensesTableView->setItemDelegate(new QSqlRelationalDelegate(ui->monthlyExpensesTableView));
     ui->monthlyExpensesTableView->hideColumn(0); // Don't show id
+    ui->monthlyExpensesTableView->resizeColumnsToContents();
 
     ui->monthlyExpensesTableView->setEnabled(true);
 
     // Connect updateslot
     QObject::connect(monthlyexpensesmodel, &QSqlRelationalTableModel::dataChanged,
                      this, &MainWindow::updateslot);
+
+    QObject::connect(monthlyexpensesmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
+            this, SLOT(monthlyExpensesRowHeaderChanged(Qt::Orientation,int,int)));
+//    QObject::connect(monthlyearningsmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
+//            this, SLOT(monthlyEarningsRowHeaderChanged(Qt::Orientation,int,int)));
 
     return 0;
 }
