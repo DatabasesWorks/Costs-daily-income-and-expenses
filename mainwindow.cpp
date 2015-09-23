@@ -8,6 +8,7 @@
 #include <QSqlField>
 #include <QSqlError>
 #include <QTableView>
+#include <QtConcurrent>
 
 #include "databaseapi.h"
 
@@ -15,7 +16,7 @@
 
 #include "categoryconfigdialog.h"
 #include "paymentmethodsconfigdialog.h"
-#include "databasedialog.h"
+#include "csvimportdialog.h"
 
 #define STDSTATUSTIME 5000
 
@@ -25,32 +26,20 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    // Disable database entry actions until database gets opened
-    ui->actionNew_Entry->setEnabled(false);
-    ui->actionDelete_Entry->setEnabled(false);
-    ui->actionSave->setEnabled(false);
-    ui->actionUpdate->setEnabled(false);
-    ui->actionClose_Database->setEnabled(false);
-    ui->actionEdit_Categories->setEnabled(false);
-    ui->actionEdit_Payment_Methods->setEnabled(false);
+    setEnableUIDB(false);
 
-    // Disable tableViews until database gets opened
-    ui->expensesTableView->setEnabled(false);
-    ui->monthlyExpensesTableView->setEnabled(false);
-    ui->earningsTableView->setEnabled(false);
-    ui->monthlyEarningsTableView->setEnabled(false);
+    ui->actionDatabase_ID->setChecked(true);
+
+    // Progress bar
+    progressBar = new QProgressBar(ui->statusBar);
+    progressBar->setAlignment(Qt::AlignRight);
+    progressBar->setMaximumSize(180, 19);
+    ui->statusBar->addPermanentWidget(progressBar);
+    progressBar->setValue(0);
+    progressBar->hide();
 
     readSettings();
     setupSignals();
-
-    qDebug() << "MainWindow(QWidget *parent) isOpen = " << isOpen;
-
-   // if(isOpen)
-   //     updateCalculations();
-
-//    QString filename;
-//    if(!isOpen)
-//        openDatabaseDialog(filename);
 
     ui->tabWidget->removeTab(categoriesID);
 }
@@ -70,14 +59,8 @@ void MainWindow::setupSignals()
 
 void MainWindow::updateslot()
 {
+    // QtConcurrent::run(this, &MainWindow::updateCalculations);
     updateCalculations();
-}
-
-void MainWindow::openDatabaseDialog(QString &filename) {
-    // Open Category Edit dialog
-    DatabaseDialog *dialog = new DatabaseDialog;
-    dialog->exec();
-    delete dialog; dialog=0;
 }
 
 void MainWindow::checkMenubar()
@@ -220,6 +203,7 @@ int MainWindow::createExpensesView()
     expensesmodel->setTable("expenses");
     expensesmodel->setEditStrategy(MyQSqlRelationalTableModel::OnManualSubmit);
     expensesmodel->setRelation(5, QSqlRelation("categories", "id", "category"));
+    expensesmodel->setRelation(6, QSqlRelation("paymentmethods", "id", "payment"));
     expensesmodel->select();
 
     expensesmodel->setHeaderData(0, Qt::Horizontal, "ID");
@@ -238,6 +222,8 @@ int MainWindow::createExpensesView()
     ui->expensesTableView->setModel(expensesmodel);
     ui->expensesTableView->hideColumn(0); // Don't show id
     ui->expensesTableView->resizeColumnsToContents();
+
+    // ui->expensesTableView->setSortingEnabled(true);
 
     ui->expensesTableView->setEnabled(true);
 
@@ -259,6 +245,7 @@ int MainWindow::createEarningsView()
     earningsmodel->setTable("earnings");
     earningsmodel->setEditStrategy(MyQSqlRelationalTableModel::OnManualSubmit);
     earningsmodel->setRelation(5, QSqlRelation("categories", "id", "category"));
+    earningsmodel->setRelation(6, QSqlRelation("paymentmethods", "id", "payment"));
     earningsmodel->select();
 
     earningsmodel->setHeaderData(0, Qt::Horizontal, "ID");
@@ -298,6 +285,7 @@ int MainWindow::createMonthlyExpensesView()
     monthlyexpensesmodel->setTable("monthlyexpenses");
     monthlyexpensesmodel->setEditStrategy(QSqlRelationalTableModel::OnManualSubmit);
     monthlyexpensesmodel->setRelation(4, QSqlRelation("categories", "id", "category"));
+    monthlyexpensesmodel->setRelation(5, QSqlRelation("paymentmethods", "id", "payment"));
     monthlyexpensesmodel->select();
 
     monthlyexpensesmodel->setHeaderData(0, Qt::Horizontal, "ID");
@@ -324,8 +312,6 @@ int MainWindow::createMonthlyExpensesView()
 
     QObject::connect(monthlyexpensesmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
             this, SLOT(monthlyExpensesRowHeaderChanged(Qt::Orientation,int,int)));
-//    QObject::connect(monthlyearningsmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
-//            this, SLOT(monthlyEarningsRowHeaderChanged(Qt::Orientation,int,int)));
 
     return 0;
 }
@@ -336,6 +322,7 @@ int MainWindow::createMonthlyEarningsView()
     monthlyearningsmodel->setTable("monthlyearnings");
     monthlyearningsmodel->setEditStrategy(QSqlRelationalTableModel::OnManualSubmit);
     monthlyearningsmodel->setRelation(4, QSqlRelation("categories", "id", "category"));
+    monthlyearningsmodel->setRelation(5, QSqlRelation("paymentmethods", "id", "payment"));
     monthlyearningsmodel->select();
 
     monthlyearningsmodel->setHeaderData(0, Qt::Horizontal, "ID");
@@ -362,8 +349,6 @@ int MainWindow::createMonthlyEarningsView()
 
     QObject::connect(monthlyearningsmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
             this, SLOT(monthlyEarningsRowHeaderChanged(Qt::Orientation,int,int)));
-//    QObject::connect(monthlyearningsmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
-//            this, SLOT(monthlyEarningsRowHeaderChanged(Qt::Orientation,int,int)));
 
     return 0;
 }
@@ -381,6 +366,27 @@ int MainWindow::createCategoriesView()
 
     ui->categoriesTableView->setModel(categoriesmodel);
     ui->categoriesTableView->hideColumn(0); // Don't show id
+
+    // Connect updateslot
+    QObject::connect(categoriesmodel, &QSqlRelationalTableModel::dataChanged,
+                     this, &MainWindow::updateslot);
+
+    return 0;
+}
+
+int MainWindow::createPaymentsView()
+{
+    paymentmethodmodel = new MyQSqlRelationalTableModel(this, sqliteDb1->db);
+    paymentmethodmodel->setTable("paymentmethods");
+    paymentmethodmodel->setEditStrategy(QSqlTableModel::OnManualSubmit);
+    paymentmethodmodel->select();
+
+    paymentmethodmodel->setHeaderData(0, Qt::Horizontal, "ID");
+    paymentmethodmodel->setHeaderData(1, Qt::Horizontal, "Category");
+    paymentmethodmodel->setHeaderData(2, Qt::Horizontal, "Description");
+
+//    ui->categoriesTableView->setModel(categoriesmodel);
+//    ui->categoriesTableView->hideColumn(0); // Don't show id
 
     // Connect updateslot
     QObject::connect(categoriesmodel, &QSqlRelationalTableModel::dataChanged,
@@ -408,19 +414,20 @@ int MainWindow::openDatabase(QString fileName)
             // get the table for categories
             createCategoriesView();
 
+            // get the table for categories
+            createPaymentsView();
+
             isOpen=true;
             dbfilename=fileName;
 
             // Update UI
             this->setWindowTitle("Costs - "+ dbfilename);
-            ui->actionNew_Entry->setEnabled(true);
-            ui->actionDelete_Entry->setEnabled(true);
-            ui->actionSave->setEnabled(true);
-            ui->actionUpdate->setEnabled(true);
-            ui->actionClose_Database->setEnabled(true);
-            ui->actionEdit_Categories->setEnabled(true);
-            ui->actionEdit_Payment_Methods->setEnabled(true);
+
+            setEnableUIDB(true);
+
             ui->statusBar->showMessage(tr("Database opened"), STDSTATUSTIME);
+
+            updateCalculations();
 
             return 0;
     } else {
@@ -464,15 +471,21 @@ void MainWindow::on_actionNew_Entry_triggered()
     categoriesmodel->select();
     int catid = categoriesmodel->record(0).value("id").toInt();
 
+    // get first payment id
+    paymentmethodmodel->select();
+    int paymentid = paymentmethodmodel->record(0).value("id").toInt();
+
     switch(ui->tabWidget->currentIndex())
     {
         case expensesTabID:
             rec.append(QSqlField("amount", QVariant::Double));
             rec.append(QSqlField("date", QVariant::String));
             rec.append(QSqlField("category", QVariant::Int));
+            rec.append(QSqlField("payment", QVariant::Int));
             rec.setValue(0, 0.0);
             rec.setValue(1, curdate);
             rec.setValue(2, catid);
+            rec.setValue(3, paymentid);
             row = expensesmodel->rowCount();
             expensesmodel->insertRecord(row,rec);
             break;
@@ -480,25 +493,31 @@ void MainWindow::on_actionNew_Entry_triggered()
             rec.append(QSqlField("amount", QVariant::Double));
             rec.append(QSqlField("date", QVariant::String));
             rec.append(QSqlField("category", QVariant::Int));
+            rec.append(QSqlField("payment", QVariant::Int));
             rec.setValue(0, 0.0);
             rec.setValue(1, curdate);
             rec.setValue(2, catid);
+            rec.setValue(3, paymentid);
             row = earningsmodel->rowCount();
             earningsmodel->insertRecord(row,rec);
             break;
         case monthlyExpensesTabID:
             rec.append(QSqlField("amount", QVariant::Double));
             rec.append(QSqlField("category", QVariant::Int));
+            rec.append(QSqlField("payment", QVariant::Int));
             rec.setValue(0, 0.0);
             rec.setValue(1, catid);
+            rec.setValue(2, paymentid);
             row = monthlyexpensesmodel->rowCount();
             monthlyexpensesmodel->insertRecord(row,rec);
             break;
         case monthlyEarningsTabID:
             rec.append(QSqlField("amount", QVariant::Double));
             rec.append(QSqlField("category", QVariant::Int));
+            rec.append(QSqlField("payment", QVariant::Int));
             rec.setValue(0, 0.0);
             rec.setValue(1, catid);
+            rec.setValue(2, paymentid);
             row = monthlyearningsmodel->rowCount();
             monthlyearningsmodel->insertRecord(row,rec);
             break;
@@ -557,13 +576,45 @@ void MainWindow::updateCalculations()
     if(isOpen) {
         ui->statusBar->showMessage(tr("Calculating..."));
         double total=0;
+
+        // Get all the data
+        while(expensesmodel->canFetchMore())
+            expensesmodel->fetchMore();
+
         int rowcount = expensesmodel->rowCount();
+
+        int pbvalue;
+
+        QDate curdate;
+        QDate firstdate = QDate::fromString("2300-12-31","yyyy-MM-dd");
+        QDate lastdate = QDate::fromString("1900-01-01","yyyy-MM-dd");
+
+        progressBar->show();
+
         for (int row=0; row < rowcount; row++)
         {
+            //  progressbar stuff
+            pbvalue = 100/(double)rowcount*(row+1);
+            progressBar->setValue(pbvalue);
+
+            curdate = QDate::fromString(expensesmodel->record(row).value("date").toString(),"yyyy-MM-dd");
+            if(curdate<firstdate)
+                firstdate = curdate;
+//            if(curdate>lastdate)
+//                lastdate = curdate;
             total += expensesmodel->record(row).value("amount").toDouble();
         }
+
+        lastdate = QDate::currentDate();
+
+        int dayspassed = firstdate.daysTo(lastdate)+1;
         calcres.total = total;
         ui->totalCostsLine->setText(QString::number(total, 'f', 2));
+        ui->avgDailyCostsLine->setText(QString::number(total/(double)dayspassed, 'f', 2));
+        ui->daysPassedLine->setText(QString::number(dayspassed, 'f', 0));
+
+        progressBar->hide();
+
         ui->statusBar->showMessage(tr("Calculations updated"), STDSTATUSTIME);
     }
 }
@@ -589,58 +640,49 @@ void MainWindow::submit(MyQSqlRelationalTableModel *model)
     ui->statusBar->showMessage(tr("Database saved"), STDSTATUSTIME);
 }
 
-void MainWindow::on_actionDelete_Entry_triggered()
+void MainWindow::deleteEntries(MyQSqlRelationalTableModel *model, QTableView *view)
 {
     QItemSelectionModel *selmodel;
     QModelIndex current;
     QModelIndexList selected;
 
+    progressBar->show();
+    int pbvalue=0;
+
+    selmodel = view->selectionModel();
+    current = selmodel->currentIndex();
+    selected = selmodel->selectedIndexes(); // list of "selected" items
+    for (int i = 0; i < selected.size(); ++i) {
+        //  progressbar stuff
+        pbvalue = 100/(double)selected.size()*(i+1);
+        progressBar->setValue(pbvalue);
+
+        selected.at(i).row();
+        model->removeRows( selected.at(i).row(), 1);
+    }
+
+    progressBar->hide();
+
+}
+
+void MainWindow::on_actionDelete_Entry_triggered()
+{
     switch(ui->tabWidget->currentIndex())
     {
     case expensesTabID:
-        selmodel = ui->expensesTableView->selectionModel();
-        current = selmodel->currentIndex();
-        selected = selmodel->selectedIndexes(); // list of "selected" items
-        for (int i = 0; i < selected.size(); ++i) {
-            selected.at(i).row();
-            expensesmodel->removeRows( selected.at(i).row(), 1);
-        }
+        deleteEntries(expensesmodel, ui->expensesTableView);
         break;
     case earningsTabID:
-        selmodel = ui->earningsTableView->selectionModel();
-        current = selmodel->currentIndex();
-        selected = selmodel->selectedIndexes(); // list of "selected" items
-        for (int i = 0; i < selected.size(); ++i) {
-            selected.at(i).row();
-            earningsmodel->removeRows( selected.at(i).row(), 1);
-        }
+        deleteEntries(earningsmodel, ui->earningsTableView);
         break;
     case monthlyExpensesTabID:
-        selmodel = ui->monthlyExpensesTableView->selectionModel();
-        current = selmodel->currentIndex();
-        selected = selmodel->selectedIndexes(); // list of "selected" items
-        for (int i = 0; i < selected.size(); ++i) {
-            selected.at(i).row();
-            monthlyexpensesmodel->removeRows( selected.at(i).row(), 1);
-        }
+        deleteEntries(monthlyexpensesmodel, ui->monthlyExpensesTableView);
         break;
     case monthlyEarningsTabID:
-        selmodel = ui->monthlyEarningsTableView->selectionModel();
-        current = selmodel->currentIndex();
-        selected = selmodel->selectedIndexes(); // list of "selected" items
-        for (int i = 0; i < selected.size(); ++i) {
-            selected.at(i).row();
-            monthlyearningsmodel->removeRows( selected.at(i).row(), 1);
-        }
+        deleteEntries(monthlyearningsmodel, ui->monthlyEarningsTableView);
         break;
     case categoriesID:
-        selmodel = ui->categoriesTableView->selectionModel();
-        current = selmodel->currentIndex();
-        selected = selmodel->selectedIndexes(); // list of "selected" items
-        for (int i = 0; i < selected.size(); ++i) {
-            selected.at(i).row();
-            categoriesmodel->removeRows( selected.at(i).row(), 1);
-        }
+        deleteEntries(categoriesmodel, ui->categoriesTableView);
         break;
     }
 
@@ -654,11 +696,6 @@ void MainWindow::on_actionFull_Screen_triggered()
     } else {
         this->showFullScreen();
     }
-}
-
-void MainWindow::on_actionQuit_triggered()
-{
-
 }
 
 void MainWindow::on_actionEdit_Categories_triggered()
@@ -706,14 +743,7 @@ void MainWindow::on_actionClose_Database_triggered()
 
             isOpen=false;
 
-            // Disable database entry actions until database gets opened
-            ui->actionNew_Entry->setEnabled(false);
-            ui->actionDelete_Entry->setEnabled(false);
-            ui->actionSave->setEnabled(false);
-            ui->actionUpdate->setEnabled(false);
-            ui->actionClose_Database->setEnabled(false);
-            ui->actionEdit_Categories->setEnabled(false);
-            ui->actionEdit_Payment_Methods->setEnabled(false);
+            setEnableUIDB(false);
 
             ui->statusBar->showMessage(tr("Database closed"), STDSTATUSTIME);
         } else {
@@ -730,6 +760,391 @@ void MainWindow::on_actionEdit_Payment_Methods_triggered()
     dialog->exec();
 
     // Update database relations
-    // expensesmodel->relationModel(5)->select();
-    // monthlyexpensesmodel->relationModel(4)->select();
+    expensesmodel->relationModel(6)->select();
+    earningsmodel->relationModel(6)->select();
+    monthlyexpensesmodel->relationModel(5)->select();
+    monthlyearningsmodel->relationModel(5)->select();
+}
+
+//// CSV handling function
+int MainWindow::getCatId(QString categorystring)
+{
+    // Search category and return the id
+    // Get all the data
+    while(categoriesmodel->canFetchMore())
+        categoriesmodel->fetchMore();
+
+    int rowcount = categoriesmodel->rowCount();
+
+    int curid;
+    QString curcatname;
+    int maxid=0;
+
+    for (int row=0; row < rowcount; row++) {
+        curid = categoriesmodel->record(row).value("id").toInt();
+        if(curid > maxid)
+            maxid = curid;
+        curcatname = categoriesmodel->record(row).value("category").toString();
+        if( QString::compare(curcatname, categorystring, Qt::CaseSensitive) == 0) {
+            return curid;
+        }
+    }
+
+    // We seem not to have found the id, therefore we create a new entry
+    QSqlRecord rec;
+    rec.append(QSqlField("id", QVariant::Int));
+    rec.append(QSqlField("category", QVariant::String));
+    rec.append(QSqlField("description", QVariant::String));
+    rec.setValue(0, maxid+1);
+    rec.setValue(1, categorystring);
+    rec.setValue(2, "Imported from CSV");
+    int row = categoriesmodel->rowCount();
+    categoriesmodel->insertRecord(row,rec);
+    if( categoriesmodel->isDirty() ) {
+        submit(categoriesmodel);
+        expensesmodel->relationModel(5)->select();
+        earningsmodel->relationModel(5)->select();
+        monthlyexpensesmodel->relationModel(4)->select();
+        monthlyearningsmodel->relationModel(4)->select();
+    }
+
+    return maxid+1;
+}
+
+int MainWindow::getPaymentId(QString paymentstring)
+{
+    // Search payment and return the id
+    // Get all the data
+    while(paymentmethodmodel->canFetchMore())
+        paymentmethodmodel->fetchMore();
+
+    int rowcount = paymentmethodmodel->rowCount();
+
+    int curid;
+    QString curpaymentname;
+    int maxid=0;
+
+    for (int row=0; row < rowcount; row++) {
+        curid = paymentmethodmodel->record(row).value("id").toInt();
+        if(curid > maxid)
+            maxid = curid;
+        curpaymentname = paymentmethodmodel->record(row).value("payment").toString();
+        if( QString::compare(curpaymentname, paymentstring, Qt::CaseSensitive) == 0) {
+            return curid;
+        }
+    }
+
+    // We seem not to have found the id, therefore we create a new entry
+    QSqlRecord rec;
+    rec.append(QSqlField("id", QVariant::Int));
+    rec.append(QSqlField("payment", QVariant::String));
+    rec.append(QSqlField("description", QVariant::String));
+    rec.setValue(0, maxid+1);
+    rec.setValue(1, paymentstring);
+    rec.setValue(2, "Imported from CSV");
+    int row = paymentmethodmodel->rowCount();
+    paymentmethodmodel->insertRecord(row,rec);
+    if( paymentmethodmodel->isDirty() ) {
+        submit(paymentmethodmodel);
+        expensesmodel->relationModel(6)->select();
+        earningsmodel->relationModel(6)->select();
+        monthlyexpensesmodel->relationModel(5)->select();
+        monthlyearningsmodel->relationModel(5)->select();
+    }
+
+    return maxid+1;
+}
+
+QStringList MainWindow::parseLine(QString line)
+{
+    QStringList list;
+    QString curval;
+    QChar curchar, nextchar;
+
+    bool quoted=false;
+
+    int start=0;
+
+    curchar = line[0];
+
+    if(QString::compare(curchar,"\"",Qt::CaseSensitive) == 0 ) {
+        quoted = true;
+        // skip the "
+        start++;
+    }
+
+    for (int cc=start; cc<line.length(); cc++) {
+        curchar = line[cc];
+        nextchar = line[cc+1];
+        if( !quoted ) {
+            if(QString::compare(curchar,",",Qt::CaseSensitive) == 0 ) {
+                if(QString::compare(nextchar,"\"",Qt::CaseSensitive) == 0 ) {
+                    quoted = true;
+                    // skip the "
+                    cc++;
+                }
+                list.append(curval);
+                curval.clear();
+                continue; // If we have submitted, we do not add the next char which is ,
+            }
+            curval.append(curchar);
+        } else { // quoted, keep adding until next char is ", then unset quoted
+            if(QString::compare(nextchar,"\"",Qt::CaseSensitive) == 0) {
+                quoted = false;
+                // skip the "
+                cc++;
+            }
+            curval.append(curchar);
+        }
+    }
+
+    if(quoted)
+        qDebug() << "ERROR IN CSV IMPORT, STILL QUOTED";
+
+    return list;
+}
+
+void MainWindow::unsetSortChecked() {
+    ui->actionDatabase_ID->setChecked(false);
+    ui->actionDate->setChecked(false);
+}
+
+void MainWindow::on_actionDate_triggered()
+{
+    QMessageBox msgBox;
+    if(expensesmodel->isDirty() || earningsmodel->isDirty() ) {
+        msgBox.setText("BUG: Before you can sort, you have to save first.");
+        msgBox.exec();
+        unsetSortChecked();
+        ui->actionDatabase_ID->setChecked(true);
+        return;
+    }
+    ui->expensesTableView->sortByColumn(2, Qt::AscendingOrder);
+    ui->expensesTableView->setSortingEnabled(false);
+    ui->earningsTableView->sortByColumn(2, Qt::AscendingOrder);
+    ui->earningsTableView->setSortingEnabled(false);
+
+    unsetSortChecked();
+    ui->actionDate->setChecked(true);
+}
+
+void MainWindow::on_actionDatabase_ID_triggered()
+{
+    QMessageBox msgBox;
+    if(expensesmodel->isDirty() || earningsmodel->isDirty() ) {
+        msgBox.setText("BUG: Before you can sort, you have to save first.");
+        msgBox.exec();
+        unsetSortChecked();
+        ui->actionDatabase_ID->setChecked(true);
+        return;
+    }
+    ui->expensesTableView->sortByColumn(0, Qt::AscendingOrder);
+    ui->expensesTableView->setSortingEnabled(false);
+    ui->earningsTableView->sortByColumn(0, Qt::AscendingOrder);
+    ui->earningsTableView->setSortingEnabled(false);
+
+    unsetSortChecked();
+    ui->actionDatabase_ID->setChecked(true);
+}
+
+void MainWindow::on_actionFrom_CSV_new_triggered()
+{
+    QMap<int, int> columnMap;
+    int lineskip;
+    QString dateformat;
+
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Import CSV"),"",
+                                                    tr("CSV (*.csv)"));
+
+    if (!fileName.isEmpty()) {
+        CSVImportDialog *dialog = new CSVImportDialog;
+        dialog->createCSVImportView(fileName);
+        if(dialog->exec()) {
+            dialog->returnData(columnMap, lineskip, dateformat);
+
+            switch(ui->tabWidget->currentIndex())
+            {
+            case expensesTabID:
+                importCSVFile(expensesmodel, fileName, columnMap, dateformat);
+                break;
+            case earningsTabID:
+                importCSVFile(earningsmodel, fileName, columnMap, dateformat);
+                break;
+            case monthlyExpensesTabID:
+                importCSVFile(monthlyexpensesmodel, fileName, columnMap, dateformat);
+                break;
+            case monthlyEarningsTabID:
+                importCSVFile(monthlyearningsmodel, fileName, columnMap, dateformat);
+                break;
+            }
+        }
+        delete dialog;
+        dialog=0;
+    }
+}
+
+int MainWindow::importCSVFile(MyQSqlRelationalTableModel *model, QString fileName, QMap<int, int> map, QString dateformat)
+{
+    enum ColMapEnum{
+        amountCol,
+        dateCol,
+        descriptionCol,
+        categoryCol,
+        paymentCol
+    };
+
+    QSqlRecord record;
+    QString line;
+
+    // Begin with disabling the updateCalculation slot
+    QObject::disconnect(expensesmodel, &QSqlRelationalTableModel::dataChanged,
+                     this, &MainWindow::updateslot);
+    QObject::disconnect(earningsmodel, &QSqlRelationalTableModel::dataChanged,
+                     this, &MainWindow::updateslot);
+    QObject::disconnect(monthlyexpensesmodel, &QSqlRelationalTableModel::dataChanged,
+                     this, &MainWindow::updateslot);
+    QObject::disconnect(monthlyearningsmodel, &QSqlRelationalTableModel::dataChanged,
+                     this, &MainWindow::updateslot);
+    QObject::disconnect(categoriesmodel, &QSqlRelationalTableModel::dataChanged,
+                     this, &MainWindow::updateslot);
+    QObject::disconnect(paymentmethodmodel, &QSqlRelationalTableModel::dataChanged,
+                     this, &MainWindow::updateslot);
+
+    QFile file(fileName);
+    if (!fileName.isEmpty()) {
+        // read file
+
+        ui->statusBar->showMessage(tr("Importing CSV..."));
+        progressBar->show();
+
+        int row;
+
+        //  progressbar stuff
+        int pbvalue;
+        qint64 filesize = file.size(), cursize = 0;
+
+        // Iterate over lines
+        const int lineskip=4;
+        if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            // Skip lines
+            for(int l=0; l<lineskip; l++) {
+                line = file.readLine();
+                cursize += line.size();  //  progressBar stuff
+            }
+            while (!file.atEnd()) {
+                line = file.readLine();
+
+                //  progressbar stuff
+                cursize += line.size();
+                pbvalue = 100/(double)filesize*(cursize);
+                progressBar->setValue(pbvalue);
+
+                record.clear();
+
+                processCSVLine(line, map, dateformat, record);
+
+                row = model->rowCount();
+                model->insertRecord(row, record);
+            }
+            file.close();
+        }
+
+        progressBar->hide();
+        ui->statusBar->showMessage(tr("Import of CSV finished"), STDSTATUSTIME);
+    }
+
+    // Begin with disabling the updateCalculation slot
+    QObject::connect(expensesmodel, &QSqlRelationalTableModel::dataChanged,
+                     this, &MainWindow::updateslot);
+    QObject::connect(earningsmodel, &QSqlRelationalTableModel::dataChanged,
+                     this, &MainWindow::updateslot);
+    QObject::connect(monthlyexpensesmodel, &QSqlRelationalTableModel::dataChanged,
+                     this, &MainWindow::updateslot);
+    QObject::connect(monthlyearningsmodel, &QSqlRelationalTableModel::dataChanged,
+                     this, &MainWindow::updateslot);
+    QObject::connect(categoriesmodel, &QSqlRelationalTableModel::dataChanged,
+                     this, &MainWindow::updateslot);
+    QObject::connect(paymentmethodmodel, &QSqlRelationalTableModel::dataChanged,
+                     this, &MainWindow::updateslot);
+
+    // Update calculations
+    updateCalculations();
+
+    ui->expensesTableView->resizeColumnsToContents();
+
+    return 0;
+}
+
+int MainWindow::processCSVLine(QString line, QMap<int,int> map, QString dateformat, QSqlRecord &record)
+{
+    enum ColMapEnum{
+        amountCol,
+        dateCol,
+        descriptionCol,
+        whatCol,
+        categoryCol,
+        paymentCol
+    };
+
+    QDate date;
+    QString curdate = date.currentDate().toString("yyyy-MM-dd");
+    int catid = 1;
+    int paymentid = 1;
+
+    QStringList values = parseLine(line);
+
+    record.append(QSqlField("amount", QVariant::Double));
+    record.append(QSqlField("date", QVariant::String));
+    record.append(QSqlField("description", QVariant::String));
+    record.append(QSqlField("what", QVariant::String));
+    record.append(QSqlField("category", QVariant::Int));
+    record.append(QSqlField("payment", QVariant::Int));
+
+    if( map[amountCol] > 0 )
+        record.setValue(0, values.value(map[amountCol]-1).replace(",", ".") );
+    if( map[dateCol] > 0 ) {
+        curdate = date.fromString(values.value(map[dateCol]-1),dateformat).toString("yyyy-MM-dd");
+        record.setValue(1, curdate);
+    }
+    if( map[descriptionCol] > 0 )
+        record.setValue(2, values.value(map[descriptionCol]-1));
+    if( map[whatCol] > 0 )
+        record.setValue(3, values.value(map[whatCol]-1));
+    if( map[categoryCol] > 0 ) {
+        // Finds the category id or creates a new category entry
+        catid = getCatId(values.value(map[categoryCol]-1));
+        record.setValue(4, catid);
+    } else {
+        catid = 1;
+        record.setValue(4, catid);
+    }
+    if( map[paymentCol] > 0 ) {
+        // Finds the category id or creates a new category entry
+        paymentid = getPaymentId(values.value(map[paymentCol]-1));
+        record.setValue(5, paymentid);
+    } else {
+        paymentid = 1;
+        record.setValue(5, paymentid);
+    }
+
+    return 0;
+}
+
+void MainWindow::setEnableUIDB(bool enable)
+{
+    // Disable database entry actions until database gets opened
+    ui->actionNew_Entry->setEnabled(enable);
+    ui->actionDelete_Entry->setEnabled(enable);
+    ui->actionSave->setEnabled(enable);
+    ui->actionUpdate->setEnabled(enable);
+    ui->actionClose_Database->setEnabled(enable);
+    ui->actionEdit_Categories->setEnabled(enable);
+    ui->actionEdit_Payment_Methods->setEnabled(enable);
+    ui->actionFrom_CSV_new->setEnabled(enable);
+
+    // Disable tableViews until database gets opened
+    ui->expensesTableView->setEnabled(enable);
+    ui->monthlyExpensesTableView->setEnabled(enable);
+    ui->earningsTableView->setEnabled(enable);
+    ui->monthlyEarningsTableView->setEnabled(enable);
 }

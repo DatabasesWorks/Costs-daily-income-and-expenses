@@ -4,8 +4,8 @@
 #include <QMainWindow>
 #include <QTableView>
 #include <QSqlTableModel>
-// #include <QSqlRelationalTableModel>
 #include <QList>
+#include <QProgressBar>
 
 #include "myqsqlrelationaltablemodel.h"
 #include "databaseapi.h"
@@ -51,8 +51,6 @@ private slots:
 
     void on_actionDelete_Entry_triggered();
 
-    void on_actionQuit_triggered();
-
     void on_actionFull_Screen_triggered();
 
     void on_actionEdit_Categories_triggered();
@@ -70,12 +68,20 @@ private slots:
     void monthlyExpensesRowHeaderChanged(Qt::Orientation orientation, int first,int last);
     void monthlyEarningsRowHeaderChanged(Qt::Orientation orientation, int first,int last);
 
+    void on_actionDate_triggered();
+
+    void on_actionDatabase_ID_triggered();
+
+    void on_actionFrom_CSV_new_triggered();
+
 private:
     CalcStruct calcres;
 
     Ui::MainWindow *ui;
 
-    MyQSqlRelationalTableModel *expensesmodel, *monthlyexpensesmodel, *earningsmodel, *monthlyearningsmodel, *categoriesmodel;
+    MyQSqlRelationalTableModel *expensesmodel, *monthlyexpensesmodel, *earningsmodel, *monthlyearningsmodel, *categoriesmodel, *paymentmethodmodel;
+
+    QProgressBar *progressBar;
 
     bool isOpen;
     QString dbfilename;
@@ -88,6 +94,8 @@ private:
     void setupSignals();
 
     int openDatabase(QString fileName);
+
+    void setEnableUIDB(bool enable);
 
     void writeSettings();
     void readSettings();
@@ -104,10 +112,20 @@ private:
     int createMonthlyExpensesView();
     int createMonthlyEarningsView();
     int createCategoriesView();
-
-    void openDatabaseDialog(QString &filename);
+    int createPaymentsView();
 
     QList<qint8> expensesHiddenRows, monthlyExpensesHiddenRows, earningsHiddenRows, monthlyEarningsHiddenRows;
+
+    void unsetSortChecked();
+
+    // CSV handling functions
+    int importCSVFile(MyQSqlRelationalTableModel *model, QString fileName, QMap<int, int> map, QString dateformat);
+    int processCSVLine(QString line, QMap<int,int> map, QString dateformat, QSqlRecord &record);
+    QStringList parseLine(QString line);
+    int getCatId(QString categorystring);
+    int getPaymentId(QString paymentstring);
+
+    void deleteEntries(MyQSqlRelationalTableModel *model, QTableView *view);
 };
 
 #endif // MAINWINDOW_H

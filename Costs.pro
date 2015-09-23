@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui sql
+QT       += core gui sql concurrent
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -19,7 +19,7 @@ SOURCES += main.cpp\
     categoryconfigdialog.cpp \
     myqsqlrelationaltablemodel.cpp \
     paymentmethodsconfigdialog.cpp \
-    databasedialog.cpp
+    csvimportdialog.cpp
 
 HEADERS  += mainwindow.h \
     databaseapi.h \
@@ -27,9 +27,9 @@ HEADERS  += mainwindow.h \
     categoryconfigdialog.h \
     myqsqlrelationaltablemodel.h \
     paymentmethodsconfigdialog.h \
-    databasedialog.h
+    csvimportdialog.h
 
 FORMS    += mainwindow.ui \
     categoryconfigdialog.ui \
     paymentmethodsconfigdialog.ui \
-    databasedialog.ui
+    csvimportdialog.ui
