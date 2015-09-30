@@ -15,7 +15,6 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     databaseapi.cpp \
-    datastatistics.cpp \
     categoryconfigdialog.cpp \
     myqsqlrelationaltablemodel.cpp \
     paymentmethodsconfigdialog.cpp \
@@ -23,7 +22,6 @@ SOURCES += main.cpp\
 
 HEADERS  += mainwindow.h \
     databaseapi.h \
-    datastatistics.h \
     categoryconfigdialog.h \
     myqsqlrelationaltablemodel.h \
     paymentmethodsconfigdialog.h \
@@ -33,3 +31,9 @@ FORMS    += mainwindow.ui \
     categoryconfigdialog.ui \
     paymentmethodsconfigdialog.ui \
     csvimportdialog.ui
+
+RESOURCES += \
+    icons.qrc
+
+# Icon for Windows
+RC_ICONS = costs.ico

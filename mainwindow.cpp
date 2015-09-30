@@ -611,6 +611,8 @@ void MainWindow::updateCalculations()
         calcres.total = total;
         ui->totalCostsLine->setText(QString::number(total, 'f', 2));
         ui->avgDailyCostsLine->setText(QString::number(total/(double)dayspassed, 'f', 2));
+        ui->expectedCostsPerMonthLine->setText(QString::number(total/(double)dayspassed*30.5, 'f', 2));
+        ui->expectedTotalCostsLine->setText(QString::number(total/(double)dayspassed*365.0, 'f', 2));
         ui->daysPassedLine->setText(QString::number(dayspassed, 'f', 0));
 
         progressBar->hide();
@@ -766,7 +768,7 @@ void MainWindow::on_actionEdit_Payment_Methods_triggered()
     monthlyearningsmodel->relationModel(5)->select();
 }
 
-//// CSV handling function
+// CSV handling functions
 int MainWindow::getCatId(QString categorystring)
 {
     // Search category and return the id
@@ -904,48 +906,7 @@ QStringList MainWindow::parseLine(QString line)
     return list;
 }
 
-void MainWindow::unsetSortChecked() {
-    ui->actionDatabase_ID->setChecked(false);
-    ui->actionDate->setChecked(false);
-}
 
-void MainWindow::on_actionDate_triggered()
-{
-    QMessageBox msgBox;
-    if(expensesmodel->isDirty() || earningsmodel->isDirty() ) {
-        msgBox.setText("BUG: Before you can sort, you have to save first.");
-        msgBox.exec();
-        unsetSortChecked();
-        ui->actionDatabase_ID->setChecked(true);
-        return;
-    }
-    ui->expensesTableView->sortByColumn(2, Qt::AscendingOrder);
-    ui->expensesTableView->setSortingEnabled(false);
-    ui->earningsTableView->sortByColumn(2, Qt::AscendingOrder);
-    ui->earningsTableView->setSortingEnabled(false);
-
-    unsetSortChecked();
-    ui->actionDate->setChecked(true);
-}
-
-void MainWindow::on_actionDatabase_ID_triggered()
-{
-    QMessageBox msgBox;
-    if(expensesmodel->isDirty() || earningsmodel->isDirty() ) {
-        msgBox.setText("BUG: Before you can sort, you have to save first.");
-        msgBox.exec();
-        unsetSortChecked();
-        ui->actionDatabase_ID->setChecked(true);
-        return;
-    }
-    ui->expensesTableView->sortByColumn(0, Qt::AscendingOrder);
-    ui->expensesTableView->setSortingEnabled(false);
-    ui->earningsTableView->sortByColumn(0, Qt::AscendingOrder);
-    ui->earningsTableView->setSortingEnabled(false);
-
-    unsetSortChecked();
-    ui->actionDatabase_ID->setChecked(true);
-}
 
 void MainWindow::on_actionFrom_CSV_new_triggered()
 {
@@ -1053,7 +1014,7 @@ int MainWindow::importCSVFile(MyQSqlRelationalTableModel *model, QString fileNam
         ui->statusBar->showMessage(tr("Import of CSV finished"), STDSTATUSTIME);
     }
 
-    // Begin with disabling the updateCalculation slot
+    // Enable the updateCalculation slot again
     QObject::connect(expensesmodel, &QSqlRelationalTableModel::dataChanged,
                      this, &MainWindow::updateslot);
     QObject::connect(earningsmodel, &QSqlRelationalTableModel::dataChanged,
@@ -1147,4 +1108,152 @@ void MainWindow::setEnableUIDB(bool enable)
     ui->monthlyExpensesTableView->setEnabled(enable);
     ui->earningsTableView->setEnabled(enable);
     ui->monthlyEarningsTableView->setEnabled(enable);
+}
+
+void MainWindow::on_actionAbout_Qt_triggered()
+{
+    QApplication::aboutQt();
+}
+
+void MainWindow::unsetSortChecked() {
+    ui->actionDatabase_ID->setChecked(false);
+    ui->actionAmount->setChecked(false);
+    ui->actionDate->setChecked(false);
+    ui->actionDescription->setChecked(false);
+    ui->actionWhere->setChecked(false);
+    ui->actionCategory->setChecked(false);
+    ui->actionPayment_Method->setChecked(false);
+}
+
+void MainWindow::on_actionDatabase_ID_triggered()
+{
+    QMessageBox msgBox;
+    if(expensesmodel->isDirty() || earningsmodel->isDirty() ) {
+        msgBox.setText("BUG: Before you can sort, you have to save first.");
+        msgBox.exec();
+        unsetSortChecked();
+        ui->actionDatabase_ID->setChecked(true);
+        return;
+    }
+    ui->expensesTableView->sortByColumn(0, Qt::AscendingOrder);
+    ui->expensesTableView->setSortingEnabled(false);
+    ui->earningsTableView->sortByColumn(0, Qt::AscendingOrder);
+    ui->earningsTableView->setSortingEnabled(false);
+
+    unsetSortChecked();
+    ui->actionDatabase_ID->setChecked(true);
+}
+
+void MainWindow::on_actionAmount_triggered()
+{
+    QMessageBox msgBox;
+    if(expensesmodel->isDirty() || earningsmodel->isDirty() ) {
+        msgBox.setText("BUG: Before you can sort, you have to save first.");
+        msgBox.exec();
+        unsetSortChecked();
+        ui->actionDatabase_ID->setChecked(true);
+        return;
+    }
+    ui->expensesTableView->sortByColumn(1, Qt::AscendingOrder);
+    ui->expensesTableView->setSortingEnabled(false);
+    ui->earningsTableView->sortByColumn(1, Qt::AscendingOrder);
+    ui->earningsTableView->setSortingEnabled(false);
+
+    unsetSortChecked();
+    ui->actionAmount->setChecked(true);
+}
+
+void MainWindow::on_actionDate_triggered()
+{
+    QMessageBox msgBox;
+    if(expensesmodel->isDirty() || earningsmodel->isDirty() ) {
+        msgBox.setText("BUG: Before you can sort, you have to save first.");
+        msgBox.exec();
+        unsetSortChecked();
+        ui->actionDatabase_ID->setChecked(true);
+        return;
+    }
+    ui->expensesTableView->sortByColumn(2, Qt::AscendingOrder);
+    ui->expensesTableView->setSortingEnabled(false);
+    ui->earningsTableView->sortByColumn(2, Qt::AscendingOrder);
+    ui->earningsTableView->setSortingEnabled(false);
+
+    unsetSortChecked();
+    ui->actionDate->setChecked(true);
+}
+
+
+void MainWindow::on_actionDescription_triggered()
+{
+    QMessageBox msgBox;
+    if(expensesmodel->isDirty() || earningsmodel->isDirty() ) {
+        msgBox.setText("BUG: Before you can sort, you have to save first.");
+        msgBox.exec();
+        unsetSortChecked();
+        ui->actionDatabase_ID->setChecked(true);
+        return;
+    }
+    ui->expensesTableView->sortByColumn(3, Qt::AscendingOrder);
+    ui->expensesTableView->setSortingEnabled(false);
+    ui->earningsTableView->sortByColumn(3, Qt::AscendingOrder);
+    ui->earningsTableView->setSortingEnabled(false);
+
+    unsetSortChecked();
+    ui->actionDescription->setChecked(true);
+}
+void MainWindow::on_actionWhere_triggered()
+{
+    QMessageBox msgBox;
+    if(expensesmodel->isDirty() || earningsmodel->isDirty() ) {
+        msgBox.setText("BUG: Before you can sort, you have to save first.");
+        msgBox.exec();
+        unsetSortChecked();
+        ui->actionDatabase_ID->setChecked(true);
+        return;
+    }
+    ui->expensesTableView->sortByColumn(4, Qt::AscendingOrder);
+    ui->expensesTableView->setSortingEnabled(false);
+    ui->earningsTableView->sortByColumn(4, Qt::AscendingOrder);
+    ui->earningsTableView->setSortingEnabled(false);
+
+    unsetSortChecked();
+    ui->actionWhere->setChecked(true);
+}
+
+void MainWindow::on_actionCategory_triggered()
+{
+    QMessageBox msgBox;
+    if(expensesmodel->isDirty() || earningsmodel->isDirty() ) {
+        msgBox.setText("BUG: Before you can sort, you have to save first.");
+        msgBox.exec();
+        unsetSortChecked();
+        ui->actionDatabase_ID->setChecked(true);
+        return;
+    }
+    ui->expensesTableView->sortByColumn(5, Qt::AscendingOrder);
+    ui->expensesTableView->setSortingEnabled(false);
+    ui->earningsTableView->sortByColumn(5, Qt::AscendingOrder);
+    ui->earningsTableView->setSortingEnabled(false);
+
+    unsetSortChecked();
+    ui->actionCategory->setChecked(true);
+}
+
+void MainWindow::on_actionPayment_Method_triggered()
+{
+    QMessageBox msgBox;
+    if(expensesmodel->isDirty() || earningsmodel->isDirty() ) {
+        msgBox.setText("BUG: Before you can sort, you have to save first.");
+        msgBox.exec();
+        unsetSortChecked();
+        ui->actionDatabase_ID->setChecked(true);
+        return;
+    }
+    ui->expensesTableView->sortByColumn(6, Qt::AscendingOrder);
+    ui->expensesTableView->setSortingEnabled(false);
+    ui->earningsTableView->sortByColumn(6, Qt::AscendingOrder);
+    ui->earningsTableView->setSortingEnabled(false);
+
+    unsetSortChecked();
+    ui->actionPayment_Method->setChecked(true);
 }

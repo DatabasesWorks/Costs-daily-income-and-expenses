@@ -24,7 +24,7 @@
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>4</number>
       </property>
       <property name="elideMode">
        <enum>Qt::ElideNone</enum>
@@ -81,6 +81,9 @@
          <layout class="QGridLayout" name="gridLayout">
           <item row="1" column="1">
            <widget class="QLineEdit" name="totalCostsLine">
+            <property name="toolTip">
+             <string>Total costs in EUR</string>
+            </property>
             <property name="readOnly">
              <bool>true</bool>
             </property>
@@ -90,7 +93,10 @@
            </widget>
           </item>
           <item row="1" column="2">
-           <widget class="QLineEdit" name="lineEdit_2">
+           <widget class="QLineEdit" name="expectedCostsPerMonthLine">
+            <property name="toolTip">
+             <string>Expected total costs per month in EUR</string>
+            </property>
             <property name="readOnly">
              <bool>true</bool>
             </property>
@@ -127,7 +133,10 @@
            </widget>
           </item>
           <item row="3" column="2">
-           <widget class="QLineEdit" name="lineEdit_4">
+           <widget class="QLineEdit" name="expectedTotalCostsLine">
+            <property name="toolTip">
+             <string>Expected total costs this year in EUR</string>
+            </property>
             <property name="readOnly">
              <bool>true</bool>
             </property>
@@ -165,6 +174,9 @@
           </item>
           <item row="3" column="1">
            <widget class="QLineEdit" name="avgDailyCostsLine">
+            <property name="toolTip">
+             <string>Average daily costs in EUR</string>
+            </property>
             <property name="readOnly">
              <bool>true</bool>
             </property>
@@ -182,6 +194,9 @@
           </item>
           <item row="5" column="1">
            <widget class="QLineEdit" name="daysPassedLine">
+            <property name="toolTip">
+             <string>Days passed since first entry</string>
+            </property>
             <property name="readOnly">
              <bool>true</bool>
             </property>
@@ -269,6 +284,7 @@
     <addaction name="actionReport_Bug"/>
     <addaction name="separator"/>
     <addaction name="actionAbout_Costs"/>
+    <addaction name="actionAbout_Qt"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -297,7 +313,12 @@
      <property name="title">
       <string>Sort By</string>
      </property>
+     <addaction name="actionAmount"/>
      <addaction name="actionDate"/>
+     <addaction name="actionDescription"/>
+     <addaction name="actionWhere"/>
+     <addaction name="actionCategory"/>
+     <addaction name="actionPayment_Method"/>
      <addaction name="actionDatabase_ID"/>
     </widget>
     <addaction name="menuSort_By"/>
@@ -329,9 +350,8 @@
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionOpen_Database">
    <property name="icon">
-    <iconset theme="document-open">
-     <normaloff/>
-    </iconset>
+    <iconset theme="document-open" resource="icons.qrc">
+     <normaloff>:/16x16/icons/16x16/document-open.png</normaloff>:/16x16/icons/16x16/document-open.png</iconset>
    </property>
    <property name="text">
     <string>Open Database...</string>
@@ -352,9 +372,8 @@
   </action>
   <action name="actionContents">
    <property name="icon">
-    <iconset theme="help-contents">
-     <normaloff/>
-    </iconset>
+    <iconset theme="help-contents" resource="icons.qrc">
+     <normaloff>:/16x16/icons/16x16/help-browser.png</normaloff>:/16x16/icons/16x16/help-browser.png</iconset>
    </property>
    <property name="text">
     <string>Contents</string>
@@ -362,9 +381,8 @@
   </action>
   <action name="actionAbout_Costs">
    <property name="icon">
-    <iconset theme="help-about">
-     <normaloff/>
-    </iconset>
+    <iconset resource="icons.qrc">
+     <normaloff>:/64x64/icons/64x64/costs.png</normaloff>:/64x64/icons/64x64/costs.png</iconset>
    </property>
    <property name="text">
     <string>About Costs...</string>
@@ -376,6 +394,10 @@
    </property>
   </action>
   <action name="actionFull_Screen">
+   <property name="icon">
+    <iconset theme="view-fullscreen" resource="icons.qrc">
+     <normaloff>:/16x16/icons/16x16/view-fullscreen.png</normaloff>:/16x16/icons/16x16/view-fullscreen.png</iconset>
+   </property>
    <property name="text">
     <string>Full Screen</string>
    </property>
@@ -385,9 +407,8 @@
   </action>
   <action name="actionCut">
    <property name="icon">
-    <iconset theme="edit-cut">
-     <normaloff/>
-    </iconset>
+    <iconset theme="edit-cut" resource="icons.qrc">
+     <normaloff>:/16x16/icons/16x16/edit-cut.png</normaloff>:/16x16/icons/16x16/edit-cut.png</iconset>
    </property>
    <property name="text">
     <string>Cut</string>
@@ -395,9 +416,8 @@
   </action>
   <action name="actionCopy">
    <property name="icon">
-    <iconset theme="edit-copy">
-     <normaloff/>
-    </iconset>
+    <iconset theme="edit-copy" resource="icons.qrc">
+     <normaloff>:/16x16/icons/16x16/edit-copy.png</normaloff>:/16x16/icons/16x16/edit-copy.png</iconset>
    </property>
    <property name="text">
     <string>Copy</string>
@@ -405,9 +425,8 @@
   </action>
   <action name="actionPaste">
    <property name="icon">
-    <iconset theme="edit-paste">
-     <normaloff/>
-    </iconset>
+    <iconset theme="edit-paste" resource="icons.qrc">
+     <normaloff>:/16x16/icons/16x16/edit-paste.png</normaloff>:/16x16/icons/16x16/edit-paste.png</iconset>
    </property>
    <property name="text">
     <string>Paste</string>
@@ -415,9 +434,8 @@
   </action>
   <action name="actionNew_Database">
    <property name="icon">
-    <iconset theme="document-new">
-     <normaloff/>
-    </iconset>
+    <iconset theme="document-new" resource="icons.qrc">
+     <normaloff>:/16x16/icons/16x16/document-new.png</normaloff>:/16x16/icons/16x16/document-new.png</iconset>
    </property>
    <property name="text">
     <string>New Database...</string>
@@ -428,9 +446,8 @@
   </action>
   <action name="actionNew_Entry">
    <property name="icon">
-    <iconset theme="list-add">
-     <normaloff/>
-    </iconset>
+    <iconset theme="list-add" resource="icons.qrc">
+     <normaloff>:/16x16/icons/16x16/list-add.png</normaloff>:/16x16/icons/16x16/list-add.png</iconset>
    </property>
    <property name="text">
     <string>New Entry</string>
@@ -441,9 +458,8 @@
   </action>
   <action name="actionSave">
    <property name="icon">
-    <iconset theme="document-save">
-     <normaloff/>
-    </iconset>
+    <iconset theme="document-save" resource="icons.qrc">
+     <normaloff>:/16x16/icons/16x16/document-save.png</normaloff>:/16x16/icons/16x16/document-save.png</iconset>
    </property>
    <property name="text">
     <string>Save Database</string>
@@ -454,9 +470,8 @@
   </action>
   <action name="actionUpdate">
    <property name="icon">
-    <iconset theme="view-refresh">
-     <normaloff/>
-    </iconset>
+    <iconset theme="view-refresh" resource="icons.qrc">
+     <normaloff>:/16x16/icons/16x16/view-refresh.png</normaloff>:/16x16/icons/16x16/view-refresh.png</iconset>
    </property>
    <property name="text">
     <string>Update</string>
@@ -475,9 +490,8 @@
   </action>
   <action name="actionDelete_Entry">
    <property name="icon">
-    <iconset theme="edit-delete">
-     <normaloff/>
-    </iconset>
+    <iconset theme="edit-delete" resource="icons.qrc">
+     <normaloff>:/16x16/icons/16x16/edit-delete.png</normaloff>:/16x16/icons/16x16/edit-delete.png</iconset>
    </property>
    <property name="text">
     <string>Delete Entry</string>
@@ -485,9 +499,8 @@
   </action>
   <action name="actionQuit">
    <property name="icon">
-    <iconset theme="application-exit">
-     <normaloff/>
-    </iconset>
+    <iconset theme="application-exit" resource="icons.qrc">
+     <normaloff>:/16x16/icons/16x16/process-stop.png</normaloff>:/16x16/icons/16x16/process-stop.png</iconset>
    </property>
    <property name="text">
     <string>Exit</string>
@@ -538,8 +551,55 @@
     <string>From CSV...</string>
    </property>
   </action>
+  <action name="actionAbout_Qt">
+   <property name="text">
+    <string>About Qt...</string>
+   </property>
+  </action>
+  <action name="actionAmount">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Amount</string>
+   </property>
+  </action>
+  <action name="actionDescription">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Description</string>
+   </property>
+  </action>
+  <action name="actionCategory">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Category</string>
+   </property>
+  </action>
+  <action name="actionPayment_Method">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Payment Method</string>
+   </property>
+  </action>
+  <action name="actionWhere">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Where</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <resources/>
+ <resources>
+  <include location="icons.qrc"/>
+ </resources>
  <connections/>
 </ui>

@@ -74,6 +74,18 @@ private slots:
 
     void on_actionFrom_CSV_new_triggered();
 
+    void on_actionAbout_Qt_triggered();
+
+    void on_actionAmount_triggered();
+
+    void on_actionDescription_triggered();
+
+    void on_actionCategory_triggered();
+
+    void on_actionPayment_Method_triggered();
+
+    void on_actionWhere_triggered();
+
 private:
     CalcStruct calcres;
 
@@ -118,14 +130,14 @@ private:
 
     void unsetSortChecked();
 
+    void deleteEntries(MyQSqlRelationalTableModel *model, QTableView *view);
+
     // CSV handling functions
     int importCSVFile(MyQSqlRelationalTableModel *model, QString fileName, QMap<int, int> map, QString dateformat);
     int processCSVLine(QString line, QMap<int,int> map, QString dateformat, QSqlRecord &record);
     QStringList parseLine(QString line);
     int getCatId(QString categorystring);
     int getPaymentId(QString paymentstring);
-
-    void deleteEntries(MyQSqlRelationalTableModel *model, QTableView *view);
 };
 
 #endif // MAINWINDOW_H
