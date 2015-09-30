@@ -37,3 +37,6 @@ RESOURCES += \
 
 # Icon for Windows
 RC_ICONS = costs.ico
+
+DISTFILES += \
+    README.md
