@@ -218,8 +218,8 @@ int MainWindow::createExpensesView()
     expensesmodel->setColColors(5,QColor(239, 239, 239, 255)); // set 'Category' column color
     expensesmodel->setColColors(6,QColor(239, 239, 239, 255)); // set 'Payment Method' column color
 
-    ui->expensesTableView->setItemDelegate(new QSqlRelationalDelegate(ui->expensesTableView));
     ui->expensesTableView->setModel(expensesmodel);
+    ui->expensesTableView->setItemDelegate(new QSqlRelationalDelegate(ui->expensesTableView));
     ui->expensesTableView->hideColumn(0); // Don't show id
     ui->expensesTableView->resizeColumnsToContents();
 
@@ -233,8 +233,6 @@ int MainWindow::createExpensesView()
 
     QObject::connect(expensesmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
             this, SLOT(expensesRowHeaderChanged(Qt::Orientation,int,int)));
-//    QObject::connect(earningsmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
-//            this, SLOT(earningsRowHeaderChanged(Qt::Orientation,int,int)));
 
     return 0;
 }
@@ -260,8 +258,8 @@ int MainWindow::createEarningsView()
     earningsmodel->setColColors(5,QColor(239, 239, 239, 255)); // set 'Category' column color
     earningsmodel->setColColors(6,QColor(239, 239, 239, 255)); // set 'Payment Method' column color
 
-    ui->earningsTableView->setItemDelegate(new QSqlRelationalDelegate(ui->earningsTableView));
     ui->earningsTableView->setModel(earningsmodel);
+    ui->earningsTableView->setItemDelegate(new QSqlRelationalDelegate(ui->earningsTableView));
     ui->earningsTableView->hideColumn(0); // Don't show id
     ui->earningsTableView->resizeColumnsToContents();
 
@@ -273,8 +271,6 @@ int MainWindow::createEarningsView()
 
     QObject::connect(earningsmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
             this, SLOT(earningsRowHeaderChanged(Qt::Orientation,int,int)));
-//    QObject::connect(earningsmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
-//            this, SLOT(earningsRowHeaderChanged(Qt::Orientation,int,int)));
 
     return 0;
 }
@@ -298,6 +294,7 @@ int MainWindow::createMonthlyExpensesView()
     monthlyexpensesmodel->setColColors(1,QColor(182, 215, 168, 255)); // set 'Amount' column color
     monthlyexpensesmodel->setColColors(4,QColor(239, 239, 239, 255)); // set 'Category' column color
     monthlyexpensesmodel->setColColors(5,QColor(239, 239, 239, 255)); // set 'Payment Method' column color
+
 
     ui->monthlyExpensesTableView->setModel(monthlyexpensesmodel);
     ui->monthlyExpensesTableView->setItemDelegate(new QSqlRelationalDelegate(ui->monthlyExpensesTableView));
@@ -335,6 +332,7 @@ int MainWindow::createMonthlyEarningsView()
     monthlyearningsmodel->setColColors(1,QColor(182, 215, 168, 255)); // set 'Amount' column color
     monthlyearningsmodel->setColColors(4,QColor(239, 239, 239, 255)); // set 'Category' column color
     monthlyearningsmodel->setColColors(5,QColor(239, 239, 239, 255)); // set 'Payment Method' column color
+
 
     ui->monthlyEarningsTableView->setModel(monthlyearningsmodel);
     ui->monthlyEarningsTableView->setItemDelegate(new QSqlRelationalDelegate(ui->monthlyEarningsTableView));

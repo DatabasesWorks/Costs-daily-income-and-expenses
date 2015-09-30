@@ -37,7 +37,7 @@ int SqliteDatabase::CreateDatabase(QString dbFilename)
               "amount real, "
               "date date, "
               "description varchar(128), "
-              "what integer, "
+              "what varchar(128), "
               "category integer, "
               "payment integer)"
                )
@@ -49,7 +49,7 @@ int SqliteDatabase::CreateDatabase(QString dbFilename)
               "amount real, "
               "date date, "
               "description varchar(128), "
-              "what integer, "
+              "what varchar(128), "
               "category integer, "
               "payment integer)"
                )
@@ -60,7 +60,7 @@ int SqliteDatabase::CreateDatabase(QString dbFilename)
               "(id integer primary key, "
               "amount real, "
               "description varchar(128), "
-              "what integer, "
+              "what varchar(128), "
               "category integer, "
               "payment integer)"
                )
@@ -71,7 +71,7 @@ int SqliteDatabase::CreateDatabase(QString dbFilename)
               "(id integer primary key, "
               "amount real, "
               "description varchar(128), "
-              "what integer, "
+              "what varchar(128), "
               "category integer, "
               "payment integer)"
                )
