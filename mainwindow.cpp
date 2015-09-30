@@ -192,9 +192,9 @@ void MainWindow::closeEvent(QCloseEvent *event)
 void MainWindow::on_actionAbout_Costs_triggered()
 {
     QMessageBox::about(this, tr("About Costs"),
-             tr("The <b>Costs</b> application should help you "
-                "manage your income/outcome and is designed for "
-                "easy use and by far not competing with true accounting apps."));
+             tr("<b>Costs</b> should help you "
+                "manage your income/expenses and is designed to be "
+                "easy to use and simple. It is by far not competing with true accounting software."));
 }
 
 int MainWindow::createExpensesView()
@@ -1256,4 +1256,10 @@ void MainWindow::on_actionPayment_Method_triggered()
 
     unsetSortChecked();
     ui->actionPayment_Method->setChecked(true);
+}
+
+void MainWindow::on_actionReport_Bug_triggered()
+{
+    QString link = "https://github.com/torlenor/Costs/issues";
+    QDesktopServices::openUrl(QUrl(link));
 }

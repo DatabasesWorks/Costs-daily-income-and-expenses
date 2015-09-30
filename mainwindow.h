@@ -86,6 +86,8 @@ private slots:
 
     void on_actionWhere_triggered();
 
+    void on_actionReport_Bug_triggered();
+
 private:
     CalcStruct calcres;
 
