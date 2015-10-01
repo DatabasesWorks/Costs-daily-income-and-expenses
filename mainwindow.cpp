@@ -1261,3 +1261,8 @@ void MainWindow::on_actionReport_Bug_triggered()
     QString link = "https://github.com/torlenor/Costs/issues";
     QDesktopServices::openUrl(QUrl(link));
 }
+
+void MainWindow::on_actionCopy_triggered()
+{
+    // Implement copy
+}

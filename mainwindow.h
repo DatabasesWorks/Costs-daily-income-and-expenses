@@ -88,6 +88,8 @@ private slots:
 
     void on_actionReport_Bug_triggered();
 
+    void on_actionCopy_triggered();
+
 private:
     CalcStruct calcres;
 
