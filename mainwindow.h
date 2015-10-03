@@ -6,6 +6,8 @@
 #include <QSqlTableModel>
 #include <QList>
 #include <QProgressBar>
+#include <QGraphicsView>
+#include <QGraphicsScene>
 
 #include "myqsqlrelationaltablemodel.h"
 #include "databaseapi.h"
@@ -36,6 +38,12 @@ public:
         projectionsID,
         categoriesID
     };
+
+public slots:
+    void customMenuRequested(QPoint pos);
+    void addReceipt();
+    void showReceipt();
+    void removeReceipt();
 
 private slots:
     void on_actionAbout_Costs_triggered();
@@ -137,11 +145,21 @@ private:
     void deleteEntries(MyQSqlRelationalTableModel *model, QTableView *view);
 
     // CSV handling functions
-    int importCSVFile(MyQSqlRelationalTableModel *model, QString fileName, QMap<int, int> map, QString dateformat);
+    int importCSVFile(MyQSqlRelationalTableModel *model, QString fileName, QMap<int, int> map, QString dateformat, bool invertValues, int lineskip);
     int processCSVLine(QString line, QMap<int,int> map, QString dateformat, QSqlRecord &record);
     QStringList parseLine(QString line);
     int getCatId(QString categorystring);
     int getPaymentId(QString paymentstring);
+
+    QAction *showReceiptAct;
+    QAction *addReceiptAct;
+    QAction *removeReceiptAct;
+
+    QMenu *menu;
+
+    QGraphicsScene *scene;
+    QGraphicsView *view;
+    QGraphicsPixmapItem *item;
 };
 
 #endif // MAINWINDOW_H

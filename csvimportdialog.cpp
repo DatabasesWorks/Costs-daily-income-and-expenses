@@ -51,11 +51,12 @@ void CSVImportDialog::createCSVImportView(QString filenamein)
 
 }
 
-void CSVImportDialog::returnData(QMap<int, int> &columnMap, int &lineskipret, QString &dateformatret)
+void CSVImportDialog::returnData(QMap<int, int> &columnMap, int &lineskipret, QString &dateformatret, bool &invert)
 {
     columnMap = cmap;
     lineskipret = lineskip;
     dateformatret = ui->dateFormatEdit->text();
+    invert = invertValue;
 }
 
 void CSVImportDialog::on_importButton_clicked()
@@ -130,6 +131,8 @@ void CSVImportDialog::on_importButton_clicked()
 
     lineskip = ui->lineskipSpinBox->value();
 
+    invertValue = ui->invertCheck->checkState();
+
     this->accept();
 }
 
@@ -179,6 +182,8 @@ void CSVImportDialog::writeSettings()
 
     settings.setValue("lineskip", ui->lineskipSpinBox->value());
 
+    settings.setValue("invertChecked", ui->invertCheck->checkState());
+
     settings.setValue("dateformat", ui->dateFormatEdit->text());
     settings.endGroup();
 }
@@ -203,6 +208,8 @@ void CSVImportDialog::readSettings()
     ui->paymentEdit->setText(settings.value("paymentValue", qint8(6)).toString());
 
     ui->lineskipSpinBox->setValue(settings.value("lineskip", qint8(4)).toInt());
+
+    ui->invertCheck->setChecked(settings.value("invertChecked", false).toBool());
 
     ui->dateFormatEdit->setText(settings.value("dateformat","M/d/yyyy").toString());
 

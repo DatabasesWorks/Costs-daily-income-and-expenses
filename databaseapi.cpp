@@ -39,7 +39,8 @@ int SqliteDatabase::CreateDatabase(QString dbFilename)
               "description varchar(128), "
               "what varchar(128), "
               "category integer, "
-              "payment integer)"
+              "payment integer,"
+              "img BLOB)"
                )
             )
         qDebug() << query.lastError();

@@ -9,6 +9,7 @@
 #include <QSqlError>
 #include <QTableView>
 #include <QtConcurrent>
+#include <QSqlQuery>
 
 #include "databaseapi.h"
 
@@ -41,12 +42,158 @@ MainWindow::MainWindow(QWidget *parent) :
     readSettings();
     setupSignals();
 
+    QPalette earningspalette;
+    earningspalette.setColor(QPalette::Base,QColor(182, 215, 168, 255));
+    ui->totalEarningsLine->setPalette(earningspalette);
+
+    QPalette expensespalette;
+    expensespalette.setColor(QPalette::Base,QColor(249, 106, 106, 255));
+    ui->totalCostsLine->setPalette(expensespalette);
+
     ui->tabWidget->removeTab(categoriesID);
+
+    // Setup actions for QTableView context menu
+    showReceiptAct = new QAction("Show receipt", this);
+    addReceiptAct = new QAction("Add receipt", this);
+    removeReceiptAct = new QAction("Remove receipt", this);
+    connect(addReceiptAct, SIGNAL(triggered()), this, SLOT(addReceipt()));
+    connect(showReceiptAct, SIGNAL(triggered()), this, SLOT(showReceipt()));
+    connect(removeReceiptAct, SIGNAL(triggered()), this, SLOT(removeReceipt()));
+
+    menu = new QMenu(this);
+    menu->addAction(showReceiptAct);
+    menu->addAction(addReceiptAct);
+    menu->addAction(removeReceiptAct);
+
+    // Setup stuff for receipt view
+    scene = new QGraphicsScene;
+    view = new QGraphicsView(scene);
+    item = new QGraphicsPixmapItem;
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::addReceipt()
+{
+    QItemSelectionModel *selmodel;
+    QModelIndex current;
+
+    selmodel = ui->expensesTableView->selectionModel();
+    current = selmodel->currentIndex();
+    int id = expensesmodel->record(current.row()).value("id").toInt();
+
+    if(expensesmodel->isDirty()) {
+        QMessageBox::StandardButton ret;
+        ret = QMessageBox::warning(this, tr("Costs"),
+                     tr("To add a receipt the database has to be saved.\n"
+                        "Do you want to save the database now?"),
+                     QMessageBox::Ok | QMessageBox::Cancel);
+        if (ret == QMessageBox::Ok) {
+            save();
+        } else {
+            return;
+        }
+    }
+
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Add receipt"),"",
+                                                    tr("Image (*.jpg *.png *.bmp)"));
+    QFile file(fileName);
+    if (! file.open(QIODevice::ReadOnly)) return;
+
+    QByteArray byteArray = file.readAll();
+
+    QSqlQuery query;
+     query.prepare("UPDATE expenses SET img=(?) WHERE id=(?)");
+     query.addBindValue(byteArray);
+     query.addBindValue(id);
+     if (query.exec()) {
+         expensesmodel->select();
+     } else {
+        QMessageBox::information(this, "Add receipt", query.lastError().text());
+     }
+}
+
+void MainWindow::showReceipt()
+{
+    QItemSelectionModel *selmodel;
+    QModelIndex current;
+
+    selmodel = ui->expensesTableView->selectionModel();
+    current = selmodel->currentIndex();
+    int id = expensesmodel->record(current.row()).value("id").toInt();
+
+    if(expensesmodel->isDirty()) {
+        QMessageBox::StandardButton ret;
+        ret = QMessageBox::warning(this, tr("Costs"),
+                     tr("To view a receipt the database has to be saved.\n"
+                        "Do you want to save the database now?"),
+                     QMessageBox::Ok | QMessageBox::Cancel);
+        if (ret == QMessageBox::Ok) {
+            save();
+        } else {
+            return;
+        }
+    }
+
+    QSqlQuery query;
+    query.prepare("SELECT img FROM expenses WHERE id=(?)");
+    query.addBindValue(id);
+    if (! query.exec()) {
+       QMessageBox::information(this, "Show receipt - Load pixmap", query.lastError().text());
+    }
+    query.first();
+    QByteArray array = query.value(0).toByteArray();
+    if (! array.isEmpty()) {
+        QPixmap pixmap = QPixmap();
+        bool isvalidpixmap = pixmap.loadFromData(array);
+        if(!isvalidpixmap){
+            QMessageBox::information(this, "Show receipt", "Pixmap data stored in the DB is not valid!");
+            return;
+        }
+
+        query.prepare("SELECT description FROM expenses WHERE id=(?)");
+        query.addBindValue(id);
+        if (! query.exec()) {
+           QMessageBox::information(this, "Show receipt - Load description", query.lastError().text());
+        }
+        query.first();
+        QString desc = query.value(0).toString();
+
+        item->setPixmap(pixmap);
+        scene->addItem(item);
+        scene->update();
+        view->setScene(scene);
+        view->setWindowTitle("Receipt - " + desc);
+        view->show();
+    }
+}
+
+void MainWindow::removeReceipt()
+{
+    QItemSelectionModel *selmodel;
+    QModelIndex current;
+
+    selmodel = ui->expensesTableView->selectionModel();
+    current = selmodel->currentIndex();
+    int id = expensesmodel->record(current.row()).value("id").toInt();
+
+    QMessageBox::StandardButton ret;
+    ret = QMessageBox::warning(this, tr("Costs"),
+                 tr("Do you want to remove the stored receipt (cannot be undone)?"),
+                 QMessageBox::Ok | QMessageBox::Cancel);
+    if (ret == QMessageBox::Ok) {
+        QSqlQuery query;
+         query.prepare("UPDATE expenses SET img=NULL WHERE id=(?)");
+         query.addBindValue(id);
+         if (query.exec()) {
+             expensesmodel->select();
+         } else {
+            QMessageBox::information(this, "Remove receipt", query.lastError().text());
+         }
+    }
 }
 
 void MainWindow::setupSignals()
@@ -213,6 +360,7 @@ int MainWindow::createExpensesView()
     expensesmodel->setHeaderData(4, Qt::Horizontal, "What / Where");
     expensesmodel->setHeaderData(5, Qt::Horizontal, "Category");
     expensesmodel->setHeaderData(6, Qt::Horizontal, "Payment Method");
+    expensesmodel->setHeaderData(7, Qt::Horizontal, "Receipt");
 
     expensesmodel->setColColors(1,QColor(182, 215, 168, 255)); // set 'Amount' column color
     expensesmodel->setColColors(5,QColor(239, 239, 239, 255)); // set 'Category' column color
@@ -227,6 +375,8 @@ int MainWindow::createExpensesView()
 
     ui->expensesTableView->setEnabled(true);
 
+    expensesmodel->setReadOnly(7,true);
+
     // Connect updateslot
     QObject::connect(expensesmodel, &QSqlRelationalTableModel::dataChanged,
                      this, &MainWindow::updateslot);
@@ -234,7 +384,19 @@ int MainWindow::createExpensesView()
     QObject::connect(expensesmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
             this, SLOT(expensesRowHeaderChanged(Qt::Orientation,int,int)));
 
+    // Add context menu
+    ui->expensesTableView->setContextMenuPolicy(Qt::CustomContextMenu);
+    QObject::connect(ui->expensesTableView, SIGNAL(customContextMenuRequested(QPoint)),
+                     this, SLOT(customMenuRequested(QPoint)));
+
     return 0;
+}
+
+void MainWindow::customMenuRequested(QPoint pos){
+    QModelIndex index=ui->expensesTableView->indexAt(pos);
+    ui->expensesTableView->selectRow(index.row());
+
+    menu->popup(ui->expensesTableView->viewport()->mapToGlobal(pos));
 }
 
 int MainWindow::createEarningsView()
@@ -573,7 +735,7 @@ void MainWindow::updateCalculations()
 {
     if(isOpen) {
         ui->statusBar->showMessage(tr("Calculating..."));
-        double total=0;
+        double total=0, earntotal=0;
 
         // Get all the data
         while(expensesmodel->canFetchMore())
@@ -589,6 +751,7 @@ void MainWindow::updateCalculations()
 
         progressBar->show();
 
+        int expcount=0, earncount=0;
         for (int row=0; row < rowcount; row++)
         {
             //  progressbar stuff
@@ -600,7 +763,13 @@ void MainWindow::updateCalculations()
                 firstdate = curdate;
 //            if(curdate>lastdate)
 //                lastdate = curdate;
-            total += expensesmodel->record(row).value("amount").toDouble();
+            if(expensesmodel->record(row).value("amount").toDouble()<0) {
+                total += expensesmodel->record(row).value("amount").toDouble();
+                expcount++;
+            } else {
+                earntotal += expensesmodel->record(row).value("amount").toDouble();
+                earncount++;
+            }
         }
 
         lastdate = QDate::currentDate();
@@ -608,6 +777,7 @@ void MainWindow::updateCalculations()
         int dayspassed = firstdate.daysTo(lastdate)+1;
         calcres.total = total;
         ui->totalCostsLine->setText(QString::number(total, 'f', 2));
+        ui->totalEarningsLine->setText(QString::number(earntotal, 'f', 2));
         ui->avgDailyCostsLine->setText(QString::number(total/(double)dayspassed, 'f', 2));
         ui->expectedCostsPerMonthLine->setText(QString::number(total/(double)dayspassed*30.5, 'f', 2));
         ui->expectedTotalCostsLine->setText(QString::number(total/(double)dayspassed*365.0, 'f', 2));
@@ -915,25 +1085,27 @@ void MainWindow::on_actionFrom_CSV_new_triggered()
     QString fileName = QFileDialog::getOpenFileName(this, tr("Import CSV"),"",
                                                     tr("CSV (*.csv)"));
 
+    bool invertValues = false;
+
     if (!fileName.isEmpty()) {
         CSVImportDialog *dialog = new CSVImportDialog;
         dialog->createCSVImportView(fileName);
         if(dialog->exec()) {
-            dialog->returnData(columnMap, lineskip, dateformat);
+            dialog->returnData(columnMap, lineskip, dateformat, invertValues);
 
             switch(ui->tabWidget->currentIndex())
             {
             case expensesTabID:
-                importCSVFile(expensesmodel, fileName, columnMap, dateformat);
+                importCSVFile(expensesmodel, fileName, columnMap, dateformat, invertValues, lineskip);
                 break;
             case earningsTabID:
-                importCSVFile(earningsmodel, fileName, columnMap, dateformat);
+                importCSVFile(earningsmodel, fileName, columnMap, dateformat, invertValues, lineskip);
                 break;
             case monthlyExpensesTabID:
-                importCSVFile(monthlyexpensesmodel, fileName, columnMap, dateformat);
+                importCSVFile(monthlyexpensesmodel, fileName, columnMap, dateformat, invertValues, lineskip);
                 break;
             case monthlyEarningsTabID:
-                importCSVFile(monthlyearningsmodel, fileName, columnMap, dateformat);
+                importCSVFile(monthlyearningsmodel, fileName, columnMap, dateformat, invertValues, lineskip);
                 break;
             }
         }
@@ -942,7 +1114,7 @@ void MainWindow::on_actionFrom_CSV_new_triggered()
     }
 }
 
-int MainWindow::importCSVFile(MyQSqlRelationalTableModel *model, QString fileName, QMap<int, int> map, QString dateformat)
+int MainWindow::importCSVFile(MyQSqlRelationalTableModel *model, QString fileName, QMap<int, int> map, QString dateformat, bool invertValues, int lineskip)
 {
     enum ColMapEnum{
         amountCol,
@@ -983,7 +1155,6 @@ int MainWindow::importCSVFile(MyQSqlRelationalTableModel *model, QString fileNam
         qint64 filesize = file.size(), cursize = 0;
 
         // Iterate over lines
-        const int lineskip=4;
         if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
             // Skip lines
             for(int l=0; l<lineskip; l++) {
@@ -1001,6 +1172,9 @@ int MainWindow::importCSVFile(MyQSqlRelationalTableModel *model, QString fileNam
                 record.clear();
 
                 processCSVLine(line, map, dateformat, record);
+
+                if(invertValues)
+                    record.setValue(0, -record.value(0).toReal());
 
                 row = model->rowCount();
                 model->insertRecord(row, record);
@@ -1063,6 +1237,8 @@ int MainWindow::processCSVLine(QString line, QMap<int,int> map, QString dateform
         record.setValue(0, values.value(map[amountCol]-1).replace(",", ".") );
     if( map[dateCol] > 0 ) {
         curdate = date.fromString(values.value(map[dateCol]-1),dateformat).toString("yyyy-MM-dd");
+        record.setValue(1, curdate);
+    } else {
         record.setValue(1, curdate);
     }
     if( map[descriptionCol] > 0 )

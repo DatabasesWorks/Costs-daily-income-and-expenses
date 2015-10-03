@@ -20,7 +20,7 @@ public:
     ~CSVImportDialog();
 
     void createCSVImportView(QString filenamein);
-    void returnData(QMap<int, int> &columnMap, int &lineskipret, QString &dateformatret);
+    void returnData(QMap<int, int> &columnMap, int &lineskipret, QString &dateformatret, bool &invert);
 
 private slots:
     void on_importButton_clicked();
@@ -42,6 +42,7 @@ private:
     MyQSqlRelationalTableModel *importmodel;
 
     int lineskip;
+    bool invertValue;
 
     void writeSettings();
     void readSettings();
