@@ -8,6 +8,8 @@
 #include <QProgressBar>
 #include <QGraphicsView>
 #include <QGraphicsScene>
+#include <QDragEnterEvent>
+#include <QDragLeaveEvent>
 
 #include "myqsqlrelationaltablemodel.h"
 #include "databaseapi.h"
@@ -38,6 +40,35 @@ public:
         projectionsID,
         categoriesID
     };
+
+protected:
+    void dropEvent(QDropEvent* event);
+
+    void dragEnterEvent(QDragEnterEvent* event)
+    {
+     // if some actions should not be usable, like move, this code must be adopted
+        if(isOpen)
+            event->acceptProposedAction();
+        else
+            event->ignore();
+    }
+
+    void dragMoveEvent(QDragMoveEvent* event)
+    {
+     // if some actions should not be usable, like move, this code must be adopted
+        if(isOpen)
+            event->acceptProposedAction();
+        else
+            event->ignore();
+    }
+
+    void dragLeaveEvent(QDragLeaveEvent* event)
+    {
+        if(isOpen)
+            event->accept();
+        else
+            event->ignore();
+    }
 
 public slots:
     void customMenuRequested(QPoint pos);
@@ -150,6 +181,7 @@ private:
     QStringList parseLine(QString line);
     int getCatId(QString categorystring);
     int getPaymentId(QString paymentstring);
+    void fileToImportDragged(QString fileName);
 
     QAction *showReceiptAct;
     QAction *addReceiptAct;

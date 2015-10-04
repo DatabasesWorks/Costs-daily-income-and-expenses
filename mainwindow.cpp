@@ -69,11 +69,43 @@ MainWindow::MainWindow(QWidget *parent) :
     scene = new QGraphicsScene;
     view = new QGraphicsView(scene);
     item = new QGraphicsPixmapItem;
+    view->setGeometry(100, 100, 800, 500);
+
+    setAcceptDrops(true);
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::dropEvent(QDropEvent* event)
+{
+    const QMimeData* mimeData = event->mimeData();
+
+    QString filename, ext;
+
+    // check for our needed mime type, here a file or a list of files
+    if (mimeData->hasUrls())
+    {
+        QStringList pathList;
+        QList<QUrl> urlList = mimeData->urls();
+
+        // extract the local paths of the files
+        for (int i = 0; i < urlList.size(); ++i) {
+            filename = urlList.at(i).toLocalFile();
+            ext = QFileInfo(filename).suffix().toLower();
+            if ( QString::compare(ext,"csv") == 0 )
+                pathList.append(filename);
+            else
+                ui->statusBar->showMessage(tr("Dropped file not recognized: ") + QFileInfo(filename).fileName(), STDSTATUSTIME);
+        }
+
+        // call a function to open the files
+        for (int i = 0; i < pathList.size(); i++) {
+            fileToImportDragged(pathList.value(i));
+        }
+    }
 }
 
 void MainWindow::addReceipt()
@@ -163,10 +195,14 @@ void MainWindow::showReceipt()
         QString desc = query.value(0).toString();
 
         item->setPixmap(pixmap);
+
         scene->addItem(item);
+        scene->setSceneRect(QRectF(0,0, pixmap.size().width(), pixmap.size().height()));
         scene->update();
-        view->setScene(scene);
+
         view->setWindowTitle("Receipt - " + desc);
+        view->update();
+
         view->show();
     }
 }
@@ -1084,6 +1120,41 @@ void MainWindow::on_actionFrom_CSV_new_triggered()
 
     QString fileName = QFileDialog::getOpenFileName(this, tr("Import CSV"),"",
                                                     tr("CSV (*.csv)"));
+
+    bool invertValues = false;
+
+    if (!fileName.isEmpty()) {
+        CSVImportDialog *dialog = new CSVImportDialog;
+        dialog->createCSVImportView(fileName);
+        if(dialog->exec()) {
+            dialog->returnData(columnMap, lineskip, dateformat, invertValues);
+
+            switch(ui->tabWidget->currentIndex())
+            {
+            case expensesTabID:
+                importCSVFile(expensesmodel, fileName, columnMap, dateformat, invertValues, lineskip);
+                break;
+            case earningsTabID:
+                importCSVFile(earningsmodel, fileName, columnMap, dateformat, invertValues, lineskip);
+                break;
+            case monthlyExpensesTabID:
+                importCSVFile(monthlyexpensesmodel, fileName, columnMap, dateformat, invertValues, lineskip);
+                break;
+            case monthlyEarningsTabID:
+                importCSVFile(monthlyearningsmodel, fileName, columnMap, dateformat, invertValues, lineskip);
+                break;
+            }
+        }
+        delete dialog;
+        dialog=0;
+    }
+}
+
+void MainWindow::fileToImportDragged(QString fileName)
+{
+    QMap<int, int> columnMap;
+    int lineskip;
+    QString dateformat;
 
     bool invertValues = false;
 

@@ -32,6 +32,8 @@ void CSVImportDialog::createCSVImportView(QString filenamein)
         ui->csvTextEdit->setText(file.readAll());
     }
 
+    this->setWindowTitle("CSV Import - " + filenamein);
+
     QTextCursor cursor = ui->csvTextEdit->textCursor();
     QTextCharFormat format;
 
