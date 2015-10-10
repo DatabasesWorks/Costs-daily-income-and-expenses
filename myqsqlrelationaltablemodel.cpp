@@ -10,7 +10,8 @@ MyQSqlRelationalTableModel::MyQSqlRelationalTableModel(QObject * parent, QSqlDat
 
 }
 
-Qt::ItemFlags MyQSqlRelationalTableModel::flags(const QModelIndex & index) const {
+Qt::ItemFlags MyQSqlRelationalTableModel::flags(const QModelIndex & index) const
+{
     bool rowisreadonly = isReadOnly.value(index.column(), false);
 
     if ( rowisreadonly ) {
@@ -32,8 +33,20 @@ void MyQSqlRelationalTableModel::setColColors(int col, QColor color)
     colColors[col] = color;
 }
 
+void MyQSqlRelationalTableModel::setNumber(int col, bool isnumber, int prec)
+{
+    // Sets the specified col to be a number column and the precision to prec
+    // This influences the display (more exact the return value of the data() function)
+    isNumber[col] = isnumber;
+    numberPrec[col] = prec;
+}
+
 QVariant MyQSqlRelationalTableModel::data ( const QModelIndex & index, int role ) const
 {
+    if (!index.isValid()) {
+        return QVariant();
+    }
+
     // If the role for which the data is requested is Qt::BackgroundColorRole, give back our
     // defined color for specific columns
     if(role==Qt::BackgroundColorRole)
@@ -41,7 +54,7 @@ QVariant MyQSqlRelationalTableModel::data ( const QModelIndex & index, int role 
         QColor rowcol = colColors.value(index.column(), QColor(Qt::white));
         if(index.column() == 1)
             if(record(index.row()).value(1).toReal()<0)
-            rowcol = QColor(QColor(249, 106, 106, 255));
+            rowcol = QColor(249, 106, 106, 255);
         return QVariant(rowcol);
     }
 
@@ -63,6 +76,14 @@ QVariant MyQSqlRelationalTableModel::data ( const QModelIndex & index, int role 
         }
         if(role == Qt::SizeHintRole) {
             return pixmap.size();
+        }
+    }
+
+    // Handle the numerical data
+    if( isNumber.value(index.column(), false) ) {
+        if(role == Qt::DisplayRole) {
+            qreal num = QSqlRelationalTableModel::data(index, role).toDouble();
+            return QString::number(num,'f', numberPrec.value(index.column(), 6) );
         }
     }
 

@@ -24,11 +24,8 @@ public:
 
 private slots:
     void on_importButton_clicked();
-
     void on_cancelButton_clicked();
-
     void on_lineskipSpinBox_valueChanged(int arg1);
-
     void on_defaultsButton_clicked();
 
 private:

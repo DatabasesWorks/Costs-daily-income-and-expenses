@@ -85,6 +85,7 @@ void CategoryConfigDialog::on_saveButton_clicked()
 void CategoryConfigDialog::submit(MyQSqlRelationalTableModel *model)
 {
     model->database().transaction();
+
     if (model->submitAll()) {
         model->database().commit();
     } else {
@@ -93,5 +94,6 @@ void CategoryConfigDialog::submit(MyQSqlRelationalTableModel *model)
                              tr("The database reported an error: %1")
                              .arg(model->lastError().text()));
     }
+
     model->select();
 }

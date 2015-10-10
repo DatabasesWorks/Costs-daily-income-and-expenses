@@ -25,14 +25,11 @@ public:
     explicit PaymentMethodsConfigDialog(QWidget *parent = 0);
     ~PaymentMethodsConfigDialog();
 
-
     int createPaymentsMethodView(SqliteDatabase *sqliteDb1);
 
 private slots:
     void on_addButton_clicked();
-
     int on_removeButton_clicked();
-
     void on_saveButton_clicked();
 
 private:

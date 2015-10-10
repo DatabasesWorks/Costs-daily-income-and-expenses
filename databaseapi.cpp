@@ -25,11 +25,14 @@ void SqliteDatabase::close()
     db.removeDatabase(db.database().connectionName());
 }
 
-int SqliteDatabase::CreateDatabase(QString dbFilename)
+int SqliteDatabase::CreateDatabase(QString dbFilename, QString errorstr)
 {
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
     db.setDatabaseName(dbFilename);
-    db.open();
+    if(! db.open()){
+        errorstr = db.lastError().text();
+        return 1;
+    }
     QSqlQuery query;
     // Create expenses table
     if(!query.exec("create table expenses "
@@ -41,40 +44,6 @@ int SqliteDatabase::CreateDatabase(QString dbFilename)
               "category integer, "
               "payment integer,"
               "img BLOB)"
-               )
-            )
-        qDebug() << query.lastError();
-    // Create earnings table
-    if(!query.exec("create table earnings "
-              "(id integer primary key, "
-              "amount real, "
-              "date date, "
-              "description varchar(128), "
-              "what varchar(128), "
-              "category integer, "
-              "payment integer)"
-               )
-            )
-        qDebug() << query.lastError();
-    // Create monthly expenses table
-    if(!query.exec("create table monthlyexpenses "
-              "(id integer primary key, "
-              "amount real, "
-              "description varchar(128), "
-              "what varchar(128), "
-              "category integer, "
-              "payment integer)"
-               )
-            )
-        qDebug() << query.lastError();
-    // Create monthly earnings table
-    if(!query.exec("create table monthlyearnings "
-              "(id integer primary key, "
-              "amount real, "
-              "description varchar(128), "
-              "what varchar(128), "
-              "category integer, "
-              "payment integer)"
                )
             )
         qDebug() << query.lastError();
@@ -114,18 +83,6 @@ int SqliteDatabase::CreateDatabase(QString dbFilename)
         qDebug() << query.lastError();
     if(!query.exec("insert into dbversion "
               "values (1, 'expenses', 1.0)")
-            )
-        qDebug() << query.lastError();
-    if(!query.exec("insert into dbversion "
-              "values (2, 'earnings', 1.0)")
-            )
-        qDebug() << query.lastError();
-    if(!query.exec("insert into dbversion "
-              "values (3, 'monthlyexpenses', 1.0)")
-            )
-        qDebug() << query.lastError();
-    if(!query.exec("insert into dbversion "
-              "values (4, 'monthlyearnings', 1.0)")
             )
         qDebug() << query.lastError();
     if(!query.exec("insert into dbversion "

@@ -24,7 +24,7 @@
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>4</number>
+       <number>0</number>
       </property>
       <property name="elideMode">
        <enum>Qt::ElideNone</enum>
@@ -34,41 +34,24 @@
       </property>
       <widget class="QWidget" name="expensesTab">
        <attribute name="title">
-        <string>Expenses</string>
+        <string>Earnings/Expenses</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
-         <widget class="QTableView" name="expensesTableView"/>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="earningsTab">
-       <attribute name="title">
-        <string>Earnings</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_6">
-        <item>
-         <widget class="QTableView" name="earningsTableView"/>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="monthlyExpensesTab">
-       <attribute name="title">
-        <string>Monthly Expenses</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_3">
-        <item>
-         <widget class="QTableView" name="monthlyExpensesTableView"/>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="monthlyEarningsTab">
-       <attribute name="title">
-        <string>Monthly Earnings</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_7">
-        <item>
-         <widget class="QTableView" name="monthlyEarningsTableView"/>
+         <widget class="QTableView" name="expensesTableView">
+          <property name="dragEnabled">
+           <bool>false</bool>
+          </property>
+          <property name="alternatingRowColors">
+           <bool>true</bool>
+          </property>
+          <property name="verticalScrollMode">
+           <enum>QAbstractItemView::ScrollPerPixel</enum>
+          </property>
+          <property name="horizontalScrollMode">
+           <enum>QAbstractItemView::ScrollPerPixel</enum>
+          </property>
+         </widget>
         </item>
        </layout>
       </widget>
@@ -79,52 +62,6 @@
        <layout class="QVBoxLayout" name="verticalLayout_5">
         <item>
          <layout class="QGridLayout" name="gridLayout">
-          <item row="0" column="1">
-           <widget class="QLabel" name="label_4">
-            <property name="text">
-             <string>Total expenses / EUR</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QLineEdit" name="totalCostsLine">
-            <property name="toolTip">
-             <string>Total costs in EUR</string>
-            </property>
-            <property name="readOnly">
-             <bool>true</bool>
-            </property>
-            <property name="placeholderText">
-             <string>total costs</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="3">
-           <spacer name="horizontalSpacer">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="5" column="2">
-           <widget class="QLineEdit" name="expectedTotalCostsLine">
-            <property name="toolTip">
-             <string>Expected total costs this year in EUR</string>
-            </property>
-            <property name="readOnly">
-             <bool>true</bool>
-            </property>
-            <property name="placeholderText">
-             <string>expected total yearly costs</string>
-            </property>
-           </widget>
-          </item>
           <item row="1" column="0">
            <spacer name="horizontalSpacer_2">
             <property name="orientation">
@@ -139,80 +76,60 @@
            </spacer>
           </item>
           <item row="4" column="2">
-           <widget class="QLabel" name="label_2">
-            <property name="text">
-             <string>Expected total costs / EUR</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="2">
            <widget class="QLineEdit" name="expectedCostsPerMonthLine">
             <property name="toolTip">
-             <string>Expected total costs per month in EUR</string>
+             <string>Expected Net per Month in EUR</string>
             </property>
             <property name="readOnly">
              <bool>true</bool>
             </property>
             <property name="placeholderText">
-             <string>expected monthly costs</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="2">
-           <widget class="QLineEdit" name="totalEarningsLine">
-            <property name="toolTip">
-             <string>Total earnings in EUR</string>
-            </property>
-            <property name="readOnly">
-             <bool>true</bool>
-            </property>
-            <property name="placeholderText">
-             <string>total earnings</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="2">
-           <widget class="QLabel" name="label_5">
-            <property name="text">
-             <string>Expected costs per month / EUR</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="2">
-           <widget class="QLabel" name="label_6">
-            <property name="text">
-             <string>Total earnings / EUR</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QLabel" name="label">
-            <property name="text">
-             <string>Avg. daily costs / EUR</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="QLineEdit" name="avgDailyCostsLine">
-            <property name="toolTip">
-             <string>Average daily costs in EUR</string>
-            </property>
-            <property name="readOnly">
-             <bool>true</bool>
-            </property>
-            <property name="placeholderText">
-             <string>avg. daily costs</string>
+             <string>Expected monthly net</string>
             </property>
            </widget>
           </item>
           <item row="4" column="1">
+           <widget class="QLineEdit" name="avgDailyCostsLine">
+            <property name="toolTip">
+             <string>Average Daily Net in EUR</string>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+            <property name="placeholderText">
+             <string>Avg. daily net</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>Avg.  Net per Day / EUR</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="2">
+           <widget class="QLabel" name="label_5">
+            <property name="text">
+             <string>Expected Net per Month / EUR</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="1">
            <widget class="QLabel" name="label_3">
             <property name="text">
              <string>Days Passed</string>
             </property>
            </widget>
           </item>
-          <item row="5" column="1">
+          <item row="0" column="3">
+           <widget class="QLabel" name="label_7">
+            <property name="text">
+             <string>Net / EUR</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="1">
            <widget class="QLineEdit" name="daysPassedLine">
             <property name="toolTip">
              <string>Days passed since first entry</string>
@@ -222,6 +139,102 @@
             </property>
             <property name="placeholderText">
              <string>days since first entry</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="3">
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>Expected Net per Year / EUR</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="3">
+           <widget class="QLineEdit" name="expectedTotalCostsLine">
+            <property name="toolTip">
+             <string>Expected Net per Year in EUR</string>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+            <property name="placeholderText">
+             <string>Expected yearly net</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="4">
+           <spacer name="horizontalSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLabel" name="label_6">
+            <property name="text">
+             <string>Total Earnings / EUR</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="totalEarningsLine">
+            <property name="toolTip">
+             <string>Total Earnings in EUR</string>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+            <property name="placeholderText">
+             <string>Total earnings</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QLineEdit" name="totalCostsLine">
+            <property name="toolTip">
+             <string>Total Expenses in EUR</string>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+            <property name="placeholderText">
+             <string>Total expenses</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QLabel" name="label_4">
+            <property name="text">
+             <string>Total Expenses / EUR</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="3">
+           <widget class="QLineEdit" name="netIncomeLine">
+            <property name="toolTip">
+             <string>Total Net in EUR</string>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+            <property name="placeholderText">
+             <string>Net</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0" colspan="5">
+           <widget class="Line" name="line">
+            <property name="lineWidth">
+             <number>2</number>
+            </property>
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
             </property>
            </widget>
           </item>
@@ -242,13 +255,29 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="categoriesTab">
+      <widget class="QWidget" name="incomeOutcomeTab">
        <attribute name="title">
-        <string>Categories</string>
+        <string>Plots</string>
        </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_4">
+       <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
-         <widget class="QTableView" name="categoriesTableView"/>
+         <layout class="QVBoxLayout" name="verticalLayout_4">
+          <item>
+           <widget class="QComboBox" name="plotSelectCombo">
+            <property name="currentText">
+             <string>Total Income vs. Total Expenses</string>
+            </property>
+            <item>
+             <property name="text">
+              <string>Total Income vs. Total Expenses</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item>
+           <widget class="MyPlots" name="plotWidget" native="true"/>
+          </item>
+         </layout>
         </item>
        </layout>
       </widget>
@@ -303,8 +332,8 @@
     <addaction name="separator"/>
     <addaction name="actionReport_Bug"/>
     <addaction name="separator"/>
-    <addaction name="actionAbout_Costs"/>
     <addaction name="actionAbout_Qt"/>
+    <addaction name="actionAbout_Costs"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -363,9 +392,13 @@
    </attribute>
    <addaction name="actionNew_Entry"/>
    <addaction name="actionDelete_Entry"/>
+   <addaction name="separator"/>
    <addaction name="actionSave"/>
+   <addaction name="separator"/>
    <addaction name="actionUpdate"/>
    <addaction name="separator"/>
+   <addaction name="actionGo_to_Top"/>
+   <addaction name="actionGo_to_Bottom"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionOpen_Database">
@@ -616,8 +649,52 @@
     <string>Where</string>
    </property>
   </action>
+  <action name="actionGo_to_Bottom">
+   <property name="icon">
+    <iconset theme="go-bottom" resource="icons.qrc">
+     <normaloff>:/16x16/icons/16x16/go-bottom.png</normaloff>:/16x16/icons/16x16/go-bottom.png</iconset>
+   </property>
+   <property name="text">
+    <string>Go to Bottom</string>
+   </property>
+   <property name="toolTip">
+    <string>Go to Bottom</string>
+   </property>
+  </action>
+  <action name="actionGo_to_Top">
+   <property name="icon">
+    <iconset theme="go-top" resource="icons.qrc">
+     <normaloff>:/16x16/icons/16x16/go-top.png</normaloff>:/16x16/icons/16x16/go-top.png</iconset>
+   </property>
+   <property name="text">
+    <string>Go to Top</string>
+   </property>
+   <property name="toolTip">
+    <string>Go to Top</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>MyPlots</class>
+   <extends>QWidget</extends>
+   <header>myplots.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <tabstops>
+  <tabstop>totalEarningsLine</tabstop>
+  <tabstop>totalCostsLine</tabstop>
+  <tabstop>netIncomeLine</tabstop>
+  <tabstop>avgDailyCostsLine</tabstop>
+  <tabstop>expectedCostsPerMonthLine</tabstop>
+  <tabstop>expectedTotalCostsLine</tabstop>
+  <tabstop>daysPassedLine</tabstop>
+  <tabstop>tabWidget</tabstop>
+  <tabstop>expensesTableView</tabstop>
+  <tabstop>plotSelectCombo</tabstop>
+ </tabstops>
  <resources>
   <include location="icons.qrc"/>
  </resources>

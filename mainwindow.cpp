@@ -18,6 +18,7 @@
 #include "categoryconfigdialog.h"
 #include "paymentmethodsconfigdialog.h"
 #include "csvimportdialog.h"
+#include "myplots.h"
 
 #define STDSTATUSTIME 5000
 
@@ -26,6 +27,20 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    for (int i = 0; i < MaxRecentFiles; ++i) {
+        recentFileActs[i] = new QAction(this);
+        recentFileActs[i]->setVisible(false);
+        connect(recentFileActs[i], SIGNAL(triggered()),
+                this, SLOT(openRecentFile()));
+    }
+
+    for (int i = 0; i < MaxRecentFiles; ++i) {
+        ui->menuFile->insertAction(ui->actionQuit, recentFileActs[i]);
+    }
+    ui->menuFile->insertSeparator(ui->actionQuit);
+
+    updateRecentFileActions();
 
     setEnableUIDB(false);
 
@@ -39,31 +54,17 @@ MainWindow::MainWindow(QWidget *parent) :
     progressBar->setValue(0);
     progressBar->hide();
 
-    readSettings();
-    setupSignals();
-
-    QPalette earningspalette;
     earningspalette.setColor(QPalette::Base,QColor(182, 215, 168, 255));
     ui->totalEarningsLine->setPalette(earningspalette);
 
-    QPalette expensespalette;
     expensespalette.setColor(QPalette::Base,QColor(249, 106, 106, 255));
     ui->totalCostsLine->setPalette(expensespalette);
 
-    ui->tabWidget->removeTab(categoriesID);
+    readSettings();
+    setupSignals();
 
     // Setup actions for QTableView context menu
-    showReceiptAct = new QAction("Show receipt", this);
-    addReceiptAct = new QAction("Add receipt", this);
-    removeReceiptAct = new QAction("Remove receipt", this);
-    connect(addReceiptAct, SIGNAL(triggered()), this, SLOT(addReceipt()));
-    connect(showReceiptAct, SIGNAL(triggered()), this, SLOT(showReceipt()));
-    connect(removeReceiptAct, SIGNAL(triggered()), this, SLOT(removeReceipt()));
-
-    menu = new QMenu(this);
-    menu->addAction(showReceiptAct);
-    menu->addAction(addReceiptAct);
-    menu->addAction(removeReceiptAct);
+    setupTableViewContectMenu();
 
     // Setup stuff for receipt view
     scene = new QGraphicsScene;
@@ -72,11 +73,32 @@ MainWindow::MainWindow(QWidget *parent) :
     view->setGeometry(100, 100, 800, 500);
 
     setAcceptDrops(true);
+
+    expincplot = new MyPlots;
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::setupTableViewContectMenu()
+{
+    showReceiptAct = new QAction("Show receipt", this);
+    addReceiptAct = new QAction("Add receipt...", this);
+    saveReceiptAct = new QAction("Save receipt...", this);
+    removeReceiptAct = new QAction("Remove receipt", this);
+    connect(addReceiptAct, SIGNAL(triggered()), this, SLOT(addReceipt()));
+    connect(showReceiptAct, SIGNAL(triggered()), this, SLOT(showReceipt()));
+    connect(saveReceiptAct, SIGNAL(triggered()), this, SLOT(saveReceipt()));
+    connect(removeReceiptAct, SIGNAL(triggered()), this, SLOT(removeReceipt()));
+
+    menu = new QMenu(this);
+    menu->addAction(showReceiptAct);
+    menu->addSeparator();
+    menu->addAction(addReceiptAct);
+    menu->addAction(saveReceiptAct);
+    menu->addAction(removeReceiptAct);
 }
 
 void MainWindow::dropEvent(QDropEvent* event)
@@ -106,6 +128,32 @@ void MainWindow::dropEvent(QDropEvent* event)
             fileToImportDragged(pathList.value(i));
         }
     }
+}
+
+void MainWindow::dragEnterEvent(QDragEnterEvent* event)
+{
+ // if some actions should not be usable, like move, this code must be adopted
+    if(isOpen)
+        event->acceptProposedAction();
+    else
+        event->ignore();
+}
+
+void MainWindow::dragMoveEvent(QDragMoveEvent* event)
+{
+ // if some actions should not be usable, like move, this code must be adopted
+    if(isOpen)
+        event->acceptProposedAction();
+    else
+        event->ignore();
+}
+
+void MainWindow::dragLeaveEvent(QDragLeaveEvent* event)
+{
+    if(isOpen)
+        event->accept();
+    else
+        event->ignore();
 }
 
 void MainWindow::addReceipt()
@@ -204,6 +252,66 @@ void MainWindow::showReceipt()
         view->update();
 
         view->show();
+    } else {
+        ui->statusBar->showMessage(tr("Selected entry does not have a saved receipt"), STDSTATUSTIME);
+    }
+}
+
+void MainWindow::saveReceipt()
+{
+    QItemSelectionModel *selmodel;
+    QModelIndex current;
+
+    selmodel = ui->expensesTableView->selectionModel();
+    current = selmodel->currentIndex();
+    int id = expensesmodel->record(current.row()).value("id").toInt();
+
+    if(expensesmodel->isDirty()) {
+        QMessageBox::StandardButton ret;
+        ret = QMessageBox::warning(this, tr("Costs"),
+                     tr("To view a receipt the database has to be saved.\n"
+                        "Do you want to save the database now?"),
+                     QMessageBox::Ok | QMessageBox::Cancel);
+        if (ret == QMessageBox::Ok) {
+            save();
+        } else {
+            return;
+        }
+    }
+
+    QSqlQuery query;
+    query.prepare("SELECT img FROM expenses WHERE id=(?)");
+    query.addBindValue(id);
+    if (! query.exec()) {
+       QMessageBox::information(this, "Show receipt - Load pixmap", query.lastError().text());
+    }
+    query.first();
+    QByteArray array = query.value(0).toByteArray();
+    if (! array.isEmpty()) {
+        QPixmap pixmap = QPixmap();
+        bool isvalidpixmap = pixmap.loadFromData(array);
+        if(!isvalidpixmap){
+            QMessageBox::information(this, "Show receipt", "Pixmap data stored in the DB is not valid!");
+            return;
+        }
+
+        query.prepare("SELECT description FROM expenses WHERE id=(?)");
+        query.addBindValue(id);
+        if (! query.exec()) {
+           QMessageBox::information(this, "Save receipt - Load description", query.lastError().text());
+        }
+        query.first();
+        QString desc = query.value(0).toString();
+
+        QString fileName = QFileDialog::getSaveFileName(this, tr("Add receipt"),"",
+                                                        tr("PNG Image (*.png)"));
+        QFile file(fileName);
+        if (! file.open(QIODevice::WriteOnly) ) return;
+
+        if (pixmap.save(&file, "PNG"))
+            ui->statusBar->showMessage(tr("Receipt saved to ") + fileName, STDSTATUSTIME);
+        else
+            ui->statusBar->showMessage(tr("Error saving receipt to ") + fileName, STDSTATUSTIME);
     }
 }
 
@@ -238,6 +346,11 @@ void MainWindow::setupSignals()
 
     QObject::connect(ui->tabWidget, &QTabWidget::currentChanged,
                      this, &MainWindow::checkMenubar);
+
+    // Make row adjust to content every time we change the column width
+    // to make word warp work
+    QObject::connect(ui->expensesTableView->horizontalHeader(), &QHeaderView::sectionResized,
+    ui->expensesTableView, &QTableView::resizeRowsToContents);
 }
 
 void MainWindow::updateslot()
@@ -248,50 +361,31 @@ void MainWindow::updateslot()
 
 void MainWindow::checkMenubar()
 {
-    if( ui->tabWidget->currentIndex() == projectionsID )
-    {
-        ui->mainToolBar->hide();
-    } else {
-        ui->mainToolBar->show();
-    }
-}
-
-void MainWindow::expensesRowHeaderChanged(Qt::Orientation orientation, int first,int last)
-{
-    if(orientation == Qt::Vertical) {
-        for(int i=first; i<last+1; i++) {
-            ui->expensesTableView->hideRow(i);
-            expensesHiddenRows.append(i);
+    if(isOpen == true) {
+        if( ui->tabWidget->currentIndex() == projectionsID
+            || ui->tabWidget->currentIndex() == plotsID  ) // used to be projectionsID
+        {
+            ui->actionDelete_Entry->setEnabled(false);
+            ui->actionNew_Entry->setEnabled(false);
+            ui->actionGo_to_Bottom->setEnabled(false);
+            ui->actionGo_to_Top->setEnabled(false);
+        } else {
+            ui->actionDelete_Entry->setEnabled(true);
+            ui->actionNew_Entry->setEnabled(true);
+            ui->actionGo_to_Bottom->setEnabled(true);
+            ui->actionGo_to_Top->setEnabled(true);
         }
     }
 }
 
-void MainWindow::earningsRowHeaderChanged(Qt::Orientation orientation, int first,int last)
+void MainWindow::expensesRowHeaderChanged(Qt::Orientation orientation, int first, int last)
 {
     if(orientation == Qt::Vertical) {
         for(int i=first; i<last+1; i++) {
-            ui->earningsTableView->hideRow(i);
-            earningsHiddenRows.append(i);
-        }
-    }
-}
-
-void MainWindow::monthlyExpensesRowHeaderChanged(Qt::Orientation orientation, int first,int last)
-{
-    if(orientation == Qt::Vertical) {
-        for(int i=first; i<last+1; i++) {
-            ui->monthlyExpensesTableView->hideRow(i);
-            monthlyExpensesHiddenRows.append(i);
-        }
-    }
-}
-
-void MainWindow::monthlyEarningsRowHeaderChanged(Qt::Orientation orientation, int first,int last)
-{
-    if(orientation == Qt::Vertical) {
-        for(int i=first; i<last+1; i++) {
-            ui->monthlyEarningsTableView->hideRow(i);
-            monthlyEarningsHiddenRows.append(i);
+            if( QString::compare(expensesmodel->headerData(i,Qt::Vertical).toString(), "!") == 0 ) {
+                ui->expensesTableView->hideRow(i);
+                expensesHiddenRows.append(i);
+            }
         }
     }
 }
@@ -318,12 +412,6 @@ void MainWindow::readSettings()
 {
     QSettings settings("Abyle Org", "Costs");
 
-    settings.beginGroup("MainWindow");
-    resize(settings.value("size", QSize(400, 400)).toSize());
-    move(settings.value("pos", QPoint(200, 200)).toPoint());
-    ui->tabWidget->setCurrentIndex(settings.value("currentTab").toInt());
-    settings.endGroup();
-
     settings.beginGroup("Database");
     isOpen = settings.value("isOpen").toBool();
     dbfilename = settings.value("dbfilename").toString();
@@ -334,15 +422,19 @@ void MainWindow::readSettings()
         openDatabase(dbfilename);
     }
 
+    settings.beginGroup("MainWindow");
+    resize(settings.value("size", QSize(400, 400)).toSize());
+    move(settings.value("pos", QPoint(200, 200)).toPoint());
+    ui->tabWidget->setCurrentIndex(settings.value("currentTab").toInt());
+    settings.endGroup();
+
     checkMenubar();
 }
 
 bool MainWindow::askClose()
 {
     if (isOpen)
-        if (expensesmodel->isDirty() || monthlyexpensesmodel->isDirty() ||
-            earningsmodel->isDirty() || monthlyearningsmodel->isDirty() ||
-            categoriesmodel->isDirty() ) {
+        if (expensesmodel->isDirty() ) {
             QMessageBox::StandardButton ret;
             ret = QMessageBox::warning(this, tr("Costs"),
                          tr("The database has been modified.\n"
@@ -374,10 +466,17 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 void MainWindow::on_actionAbout_Costs_triggered()
 {
-    QMessageBox::about(this, tr("About Costs"),
+    QMessageBox::about(this, tr("About Costs - ") + QString::number(VERSION_MAJOR,'g',0) + "."
+                                                 + QString::number(VERSION_MINOR,'g',0) + "."
+                                                 + QString::number(VERSION_PATCH,'g',0) + "."
+                                                 + QString::number(VERSION_BUILD,'g',0),
              tr("<b>Costs</b> should help you "
                 "manage your income/expenses and is designed to be "
-                "easy to use and simple. It is by far not competing with true accounting software."));
+                "easy to use and simple. It is by far not competing with true accounting software.") + "<br><br>" +
+                "Costs Version: " + QString::number(VERSION_MAJOR,'g',0) + "."
+                                  + QString::number(VERSION_MINOR,'g',0) + "."
+                                  + QString::number(VERSION_PATCH,'g',0) + "."
+                                  + QString::number(VERSION_BUILD,'g',0)  );
 }
 
 int MainWindow::createExpensesView()
@@ -398,20 +497,21 @@ int MainWindow::createExpensesView()
     expensesmodel->setHeaderData(6, Qt::Horizontal, "Payment Method");
     expensesmodel->setHeaderData(7, Qt::Horizontal, "Receipt");
 
-    expensesmodel->setColColors(1,QColor(182, 215, 168, 255)); // set 'Amount' column color
-    expensesmodel->setColColors(5,QColor(239, 239, 239, 255)); // set 'Category' column color
-    expensesmodel->setColColors(6,QColor(239, 239, 239, 255)); // set 'Payment Method' column color
+    expensesmodel->setColColors(1, QColor(182, 215, 168, 255)); // set 'Amount' column color
+    expensesmodel->setColColors(5, QColor(239, 239, 239, 255)); // set 'Category' column color
+    expensesmodel->setColColors(6, QColor(239, 239, 239, 255)); // set 'Payment Method' column color
 
     ui->expensesTableView->setModel(expensesmodel);
     ui->expensesTableView->setItemDelegate(new QSqlRelationalDelegate(ui->expensesTableView));
     ui->expensesTableView->hideColumn(0); // Don't show id
     ui->expensesTableView->resizeColumnsToContents();
 
-    // ui->expensesTableView->setSortingEnabled(true);
-
     ui->expensesTableView->setEnabled(true);
 
-    expensesmodel->setReadOnly(7,true);
+    expensesmodel->setReadOnly(7, true);
+
+    // Set amount column to number type and to 2 decimal places
+    expensesmodel->setNumber(1, true, 2);
 
     // Connect updateslot
     QObject::connect(expensesmodel, &QSqlRelationalTableModel::dataChanged,
@@ -425,128 +525,25 @@ int MainWindow::createExpensesView()
     QObject::connect(ui->expensesTableView, SIGNAL(customContextMenuRequested(QPoint)),
                      this, SLOT(customMenuRequested(QPoint)));
 
+    QObject::connect(ui->expensesTableView, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(tabDoubleClicked(QModelIndex)));
+
     return 0;
 }
 
-void MainWindow::customMenuRequested(QPoint pos){
+void MainWindow::tabDoubleClicked(QModelIndex index)
+{
+    int col = index.column();
+
+    if(col == 7)
+        showReceipt();
+}
+
+void MainWindow::customMenuRequested(QPoint pos)
+{
     QModelIndex index=ui->expensesTableView->indexAt(pos);
     ui->expensesTableView->selectRow(index.row());
 
     menu->popup(ui->expensesTableView->viewport()->mapToGlobal(pos));
-}
-
-int MainWindow::createEarningsView()
-{
-    earningsmodel = new MyQSqlRelationalTableModel(this, sqliteDb1->db);
-    earningsmodel->setTable("earnings");
-    earningsmodel->setEditStrategy(MyQSqlRelationalTableModel::OnManualSubmit);
-    earningsmodel->setRelation(5, QSqlRelation("categories", "id", "category"));
-    earningsmodel->setRelation(6, QSqlRelation("paymentmethods", "id", "payment"));
-    earningsmodel->select();
-
-    earningsmodel->setHeaderData(0, Qt::Horizontal, "ID");
-    earningsmodel->setHeaderData(1, Qt::Horizontal, "Amount / EUR");
-    earningsmodel->setHeaderData(2, Qt::Horizontal, "Date");
-    earningsmodel->setHeaderData(3, Qt::Horizontal, "Description");
-    earningsmodel->setHeaderData(4, Qt::Horizontal, "What / Where");
-    earningsmodel->setHeaderData(5, Qt::Horizontal, "Category");
-    earningsmodel->setHeaderData(6, Qt::Horizontal, "Payment Method");
-
-    earningsmodel->setColColors(1,QColor(182, 215, 168, 255)); // set 'Amount' column color
-    earningsmodel->setColColors(5,QColor(239, 239, 239, 255)); // set 'Category' column color
-    earningsmodel->setColColors(6,QColor(239, 239, 239, 255)); // set 'Payment Method' column color
-
-    ui->earningsTableView->setModel(earningsmodel);
-    ui->earningsTableView->setItemDelegate(new QSqlRelationalDelegate(ui->earningsTableView));
-    ui->earningsTableView->hideColumn(0); // Don't show id
-    ui->earningsTableView->resizeColumnsToContents();
-
-    ui->earningsTableView->setEnabled(true);
-
-    // Connect updateslot
-    QObject::connect(earningsmodel, &QSqlRelationalTableModel::dataChanged,
-                     this, &MainWindow::updateslot);
-
-    QObject::connect(earningsmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
-            this, SLOT(earningsRowHeaderChanged(Qt::Orientation,int,int)));
-
-    return 0;
-}
-
-int MainWindow::createMonthlyExpensesView()
-{
-    monthlyexpensesmodel = new MyQSqlRelationalTableModel(this, sqliteDb1->db);
-    monthlyexpensesmodel->setTable("monthlyexpenses");
-    monthlyexpensesmodel->setEditStrategy(QSqlRelationalTableModel::OnManualSubmit);
-    monthlyexpensesmodel->setRelation(4, QSqlRelation("categories", "id", "category"));
-    monthlyexpensesmodel->setRelation(5, QSqlRelation("paymentmethods", "id", "payment"));
-    monthlyexpensesmodel->select();
-
-    monthlyexpensesmodel->setHeaderData(0, Qt::Horizontal, "ID");
-    monthlyexpensesmodel->setHeaderData(1, Qt::Horizontal, "Amount / EUR");
-    monthlyexpensesmodel->setHeaderData(2, Qt::Horizontal, "Description");
-    monthlyexpensesmodel->setHeaderData(3, Qt::Horizontal, "What / Where");
-    monthlyexpensesmodel->setHeaderData(4, Qt::Horizontal, "Category");
-    monthlyexpensesmodel->setHeaderData(5, Qt::Horizontal, "Payment Method");
-
-    monthlyexpensesmodel->setColColors(1,QColor(182, 215, 168, 255)); // set 'Amount' column color
-    monthlyexpensesmodel->setColColors(4,QColor(239, 239, 239, 255)); // set 'Category' column color
-    monthlyexpensesmodel->setColColors(5,QColor(239, 239, 239, 255)); // set 'Payment Method' column color
-
-
-    ui->monthlyExpensesTableView->setModel(monthlyexpensesmodel);
-    ui->monthlyExpensesTableView->setItemDelegate(new QSqlRelationalDelegate(ui->monthlyExpensesTableView));
-    ui->monthlyExpensesTableView->hideColumn(0); // Don't show id
-    ui->monthlyExpensesTableView->resizeColumnsToContents();
-
-    ui->monthlyExpensesTableView->setEnabled(true);
-
-    // Connect updateslot
-    QObject::connect(monthlyexpensesmodel, &QSqlRelationalTableModel::dataChanged,
-                     this, &MainWindow::updateslot);
-
-    QObject::connect(monthlyexpensesmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
-            this, SLOT(monthlyExpensesRowHeaderChanged(Qt::Orientation,int,int)));
-
-    return 0;
-}
-
-int MainWindow::createMonthlyEarningsView()
-{
-    monthlyearningsmodel = new MyQSqlRelationalTableModel(this, sqliteDb1->db);
-    monthlyearningsmodel->setTable("monthlyearnings");
-    monthlyearningsmodel->setEditStrategy(QSqlRelationalTableModel::OnManualSubmit);
-    monthlyearningsmodel->setRelation(4, QSqlRelation("categories", "id", "category"));
-    monthlyearningsmodel->setRelation(5, QSqlRelation("paymentmethods", "id", "payment"));
-    monthlyearningsmodel->select();
-
-    monthlyearningsmodel->setHeaderData(0, Qt::Horizontal, "ID");
-    monthlyearningsmodel->setHeaderData(1, Qt::Horizontal, "Amount / EUR");
-    monthlyearningsmodel->setHeaderData(2, Qt::Horizontal, "Description");
-    monthlyearningsmodel->setHeaderData(3, Qt::Horizontal, "What / Where");
-    monthlyearningsmodel->setHeaderData(4, Qt::Horizontal, "Category");
-    monthlyearningsmodel->setHeaderData(5, Qt::Horizontal, "Payment Method");
-
-    monthlyearningsmodel->setColColors(1,QColor(182, 215, 168, 255)); // set 'Amount' column color
-    monthlyearningsmodel->setColColors(4,QColor(239, 239, 239, 255)); // set 'Category' column color
-    monthlyearningsmodel->setColColors(5,QColor(239, 239, 239, 255)); // set 'Payment Method' column color
-
-
-    ui->monthlyEarningsTableView->setModel(monthlyearningsmodel);
-    ui->monthlyEarningsTableView->setItemDelegate(new QSqlRelationalDelegate(ui->monthlyEarningsTableView));
-    ui->monthlyEarningsTableView->hideColumn(0); // Don't show id
-    ui->monthlyEarningsTableView->resizeColumnsToContents();
-
-    ui->monthlyEarningsTableView->setEnabled(true);
-
-    // Connect updateslot
-    QObject::connect(monthlyearningsmodel, &QSqlRelationalTableModel::dataChanged,
-                     this, &MainWindow::updateslot);
-
-    QObject::connect(monthlyearningsmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
-            this, SLOT(monthlyEarningsRowHeaderChanged(Qt::Orientation,int,int)));
-
-    return 0;
 }
 
 int MainWindow::createCategoriesView()
@@ -559,9 +556,6 @@ int MainWindow::createCategoriesView()
     categoriesmodel->setHeaderData(0, Qt::Horizontal, "ID");
     categoriesmodel->setHeaderData(1, Qt::Horizontal, "Category");
     categoriesmodel->setHeaderData(2, Qt::Horizontal, "Description");
-
-    ui->categoriesTableView->setModel(categoriesmodel);
-    ui->categoriesTableView->hideColumn(0); // Don't show id
 
     // Connect updateslot
     QObject::connect(categoriesmodel, &QSqlRelationalTableModel::dataChanged,
@@ -581,59 +575,116 @@ int MainWindow::createPaymentsView()
     paymentmethodmodel->setHeaderData(1, Qt::Horizontal, "Category");
     paymentmethodmodel->setHeaderData(2, Qt::Horizontal, "Description");
 
-//    ui->categoriesTableView->setModel(categoriesmodel);
-//    ui->categoriesTableView->hideColumn(0); // Don't show id
-
     // Connect updateslot
-    QObject::connect(categoriesmodel, &QSqlRelationalTableModel::dataChanged,
+    QObject::connect(paymentmethodmodel, &QSqlRelationalTableModel::dataChanged,
                      this, &MainWindow::updateslot);
 
     return 0;
 }
 
+void MainWindow::openRecentFile()
+{
+    QAction *action = qobject_cast<QAction *>(sender());
+    if (action)
+        openDatabase(action->data().toString());
+}
+
 int MainWindow::openDatabase(QString fileName)
 {
+    bool wasopen=isOpen;
     if(QFile(fileName).exists()){
         sqliteDb1 = new SqliteDatabase(fileName);
-            //Show table for expenses
-            createExpensesView();
+        isOpen=false;
+        //Show table for expenses
+        createExpensesView();
 
-            //Show table for expenses
-            createEarningsView();
+        // get the table for categories
+        createCategoriesView();
 
-            // Show table for monthlyexpenses
-            createMonthlyExpensesView();
+        // get the table for categories
+        createPaymentsView();
 
-            // Show table for monthlyearnings
-            createMonthlyEarningsView();
+        isOpen=true;
+        dbfilename=fileName;
 
-            // get the table for categories
-            createCategoriesView();
+        // Update UI
+        this->setWindowTitle("Costs - "+ dbfilename);
 
-            // get the table for categories
-            createPaymentsView();
+        setEnableUIDB(true);
 
-            isOpen=true;
-            dbfilename=fileName;
+        ui->statusBar->showMessage(tr("Database opened"), STDSTATUSTIME);
 
-            // Update UI
-            this->setWindowTitle("Costs - "+ dbfilename);
+        // Read all the data
+        while(expensesmodel->canFetchMore())
+            expensesmodel->fetchMore();
 
-            setEnableUIDB(true);
+        updateCalculations();
 
-            ui->statusBar->showMessage(tr("Database opened"), STDSTATUSTIME);
+        // Scroll to the end
+        ui->expensesTableView->resizeColumnsToContents();
+        if(ui->expensesTableView->columnWidth(3) > 0.85*this->width()) {
+            ui->expensesTableView->setColumnWidth(3, 0.85*this->width() );
+        }
+        ui->expensesTableView->resizeRowsToContents();
+        ui->expensesTableView->scrollToTop();
+        ui->expensesTableView->scrollToBottom();
 
-            updateCalculations();
+        setCurrentFile(fileName);
 
-            return 0;
+        return 0;
     } else {
         QMessageBox::warning(this, tr("Costs"),
                              tr("Database cannot be opened: %1")
                              .arg(fileName));
-        isOpen = false;
+        isOpen = wasopen;
         return 1;
     }
 
+}
+
+void MainWindow::setCurrentFile(const QString &fileName)
+{
+    curFile = fileName;
+    setWindowFilePath(curFile);
+
+    QSettings settings("Abyle Org", "Costs");
+    QStringList files = settings.value("recentFileList").toStringList();
+    files.removeAll(fileName);
+    files.prepend(fileName);
+    while (files.size() > MaxRecentFiles)
+        files.removeLast();
+
+    settings.setValue("recentFileList", files);
+
+    foreach (QWidget *widget, QApplication::topLevelWidgets()) {
+        MainWindow *mainWin = qobject_cast<MainWindow *>(widget);
+        if (mainWin)
+            mainWin->updateRecentFileActions();
+    }
+
+    updateRecentFileActions();
+}
+
+void MainWindow::updateRecentFileActions()
+{
+    QSettings settings("Abyle Org", "Costs");
+    QStringList files = settings.value("recentFileList").toStringList();
+
+    int numRecentFiles = qMin(files.size(), (int)MaxRecentFiles);
+
+    for (int i = 0; i < numRecentFiles; ++i) {
+        QString text = tr("&%1 %2").arg(i + 1).arg(strippedName(files[i]));
+        recentFileActs[i]->setText(text);
+        recentFileActs[i]->setData(files[i]);
+        recentFileActs[i]->setVisible(true);
+    }
+    for (int j = numRecentFiles; j < MaxRecentFiles; ++j)
+        recentFileActs[j]->setVisible(false);
+}
+
+QString MainWindow::strippedName(const QString &fullFileName)
+{
+    return QFileInfo(fullFileName).fileName();
 }
 
 void MainWindow::on_actionOpen_Database_triggered()
@@ -648,9 +699,16 @@ void MainWindow::on_actionNew_Database_triggered()
 {
     QString fileName = QFileDialog::getSaveFileName(this, tr("New Database"),"",
                                                     tr("SQLite DB (*.db)"));
+    QString errorstr;
     if (!fileName.isEmpty()) {
-        SqliteDatabase::CreateDatabase(fileName);
-        openDatabase(fileName);
+        int ret = SqliteDatabase::CreateDatabase(fileName, errorstr);
+        if( ret > 0) {
+            QMessageBox::warning(this, tr("Costs"),
+                                 tr("Database cannot be created: %1\n\nError: %2")
+                                 .arg(fileName).arg(errorstr));
+        } else {
+            openDatabase(fileName);
+        }
     }
 }
 
@@ -684,46 +742,11 @@ void MainWindow::on_actionNew_Entry_triggered()
             rec.setValue(3, paymentid);
             row = expensesmodel->rowCount();
             expensesmodel->insertRecord(row,rec);
-            break;
-        case earningsTabID:
-            rec.append(QSqlField("amount", QVariant::Double));
-            rec.append(QSqlField("date", QVariant::String));
-            rec.append(QSqlField("category", QVariant::Int));
-            rec.append(QSqlField("payment", QVariant::Int));
-            rec.setValue(0, 0.0);
-            rec.setValue(1, curdate);
-            rec.setValue(2, catid);
-            rec.setValue(3, paymentid);
-            row = earningsmodel->rowCount();
-            earningsmodel->insertRecord(row,rec);
-            break;
-        case monthlyExpensesTabID:
-            rec.append(QSqlField("amount", QVariant::Double));
-            rec.append(QSqlField("category", QVariant::Int));
-            rec.append(QSqlField("payment", QVariant::Int));
-            rec.setValue(0, 0.0);
-            rec.setValue(1, catid);
-            rec.setValue(2, paymentid);
-            row = monthlyexpensesmodel->rowCount();
-            monthlyexpensesmodel->insertRecord(row,rec);
-            break;
-        case monthlyEarningsTabID:
-            rec.append(QSqlField("amount", QVariant::Double));
-            rec.append(QSqlField("category", QVariant::Int));
-            rec.append(QSqlField("payment", QVariant::Int));
-            rec.setValue(0, 0.0);
-            rec.setValue(1, catid);
-            rec.setValue(2, paymentid);
-            row = monthlyearningsmodel->rowCount();
-            monthlyearningsmodel->insertRecord(row,rec);
-            break;
-        case categoriesID:
-            row = categoriesmodel->rowCount();
-            categoriesmodel->insertRows(row,1);
-            expensesmodel->relationModel(5)->select();
+
+            // Scroll to the end
+            ui->expensesTableView->scrollToBottom();
             break;
     }
-    updateCalculations();
 }
 
 void MainWindow::uhideAllRows(QTableView *view, QList<qint8> &rowList)
@@ -740,21 +763,9 @@ void MainWindow::on_actionSave_triggered()
     if( expensesmodel->isDirty() )
         submit(expensesmodel);
         uhideAllRows(ui->expensesTableView, expensesHiddenRows);
-    if( earningsmodel->isDirty() )
-        submit(earningsmodel);
-        uhideAllRows(ui->earningsTableView, earningsHiddenRows);
-    if( monthlyexpensesmodel->isDirty() )
-        submit(monthlyexpensesmodel);
-        uhideAllRows(ui->monthlyExpensesTableView, monthlyExpensesHiddenRows);
-    if( monthlyearningsmodel->isDirty() )
-        submit(monthlyearningsmodel);
-        uhideAllRows(ui->monthlyEarningsTableView, monthlyEarningsHiddenRows);
     if( categoriesmodel->isDirty() ) {
         submit(categoriesmodel);
         expensesmodel->relationModel(5)->select();
-        earningsmodel->relationModel(5)->select();
-        monthlyexpensesmodel->relationModel(4)->select();
-        monthlyearningsmodel->relationModel(4)->select();
     }
 
     updateCalculations();
@@ -771,7 +782,7 @@ void MainWindow::updateCalculations()
 {
     if(isOpen) {
         ui->statusBar->showMessage(tr("Calculating..."));
-        double total=0, earntotal=0;
+        qreal totalexpenses=0, totalincome=0;
 
         // Get all the data
         while(expensesmodel->canFetchMore())
@@ -788,41 +799,79 @@ void MainWindow::updateCalculations()
         progressBar->show();
 
         int expcount=0, earncount=0;
+        qreal curvalue=0;
         for (int row=0; row < rowcount; row++)
         {
             //  progressbar stuff
             pbvalue = 100/(double)rowcount*(row+1);
             progressBar->setValue(pbvalue);
 
+
+            curvalue = expensesmodel->record(row).value("amount").toDouble();
             curdate = QDate::fromString(expensesmodel->record(row).value("date").toString(),"yyyy-MM-dd");
             if(curdate<firstdate)
                 firstdate = curdate;
-//            if(curdate>lastdate)
-//                lastdate = curdate;
-            if(expensesmodel->record(row).value("amount").toDouble()<0) {
-                total += expensesmodel->record(row).value("amount").toDouble();
+            if( curvalue < 0 ) {
+                totalexpenses += curvalue;
                 expcount++;
             } else {
-                earntotal += expensesmodel->record(row).value("amount").toDouble();
+                totalincome += curvalue;
                 earncount++;
             }
         }
 
         lastdate = QDate::currentDate();
 
-        int dayspassed = firstdate.daysTo(lastdate)+1;
-        calcres.total = total;
-        ui->totalCostsLine->setText(QString::number(total, 'f', 2));
-        ui->totalEarningsLine->setText(QString::number(earntotal, 'f', 2));
-        ui->avgDailyCostsLine->setText(QString::number(total/(double)dayspassed, 'f', 2));
-        ui->expectedCostsPerMonthLine->setText(QString::number(total/(double)dayspassed*30.5, 'f', 2));
-        ui->expectedTotalCostsLine->setText(QString::number(total/(double)dayspassed*365.0, 'f', 2));
-        ui->daysPassedLine->setText(QString::number(dayspassed, 'f', 0));
+        qint16 dayspassed = firstdate.daysTo(lastdate) + 1;
+
+        if(rowcount == 0)
+            dayspassed = 0;
+
+        calcres.totalIncome = totalincome;
+        calcres.totalExpenses = totalexpenses;
+        calcres.totalNet = calcres.totalIncome + calcres.totalExpenses;
+        calcres.perDayIncome = totalincome/(double)dayspassed;
+        calcres.perDayExpenses = totalexpenses/(double)dayspassed;;
+        calcres.perDayNet = calcres.perDayIncome + calcres.perDayExpenses;
+        calcres.perMonthIncome = totalincome/(double)dayspassed*30.5;
+        calcres.perMonthExpenses = totalexpenses/(double)dayspassed*30.5;
+        calcres.perMonthNet = calcres.perMonthIncome + calcres.perMonthExpenses;
+        calcres.perYearIncome = totalincome/(double)dayspassed*365.0;
+        calcres.perYearExpenses = totalexpenses/(double)dayspassed*365.0;
+        calcres.perYearNet = calcres.perYearIncome + calcres.perYearExpenses;
+        calcres.perLineIncome = totalincome/earncount;
+        calcres.perLineExpenses = totalexpenses/earncount;;
+        calcres.daysPassed = dayspassed;
+
+        updateCalculationsUI();
 
         progressBar->hide();
-
         ui->statusBar->showMessage(tr("Calculations updated"), STDSTATUSTIME);
     }
+}
+
+void MainWindow::updateCalculationsUI()
+{
+    ui->totalEarningsLine->setText(QString::number(calcres.totalIncome, 'f', 2));
+    ui->totalCostsLine->setText(QString::number(calcres.totalExpenses, 'f', 2));
+
+    if( calcres.totalNet < 0 ) {
+        ui->netIncomeLine->setPalette(expensespalette);
+    } else {
+        ui->netIncomeLine->setPalette(earningspalette);
+    }
+    ui->netIncomeLine->setText(QString::number(calcres.totalNet, 'f', 2));
+
+    ui->avgDailyCostsLine->setText(QString::number(calcres.perDayNet, 'f', 2));
+
+    ui->expectedCostsPerMonthLine->setText(QString::number(calcres.perMonthNet, 'f', 2));
+
+    ui->expectedTotalCostsLine->setText(QString::number(calcres.perYearNet, 'f', 2));
+
+    ui->daysPassedLine->setText(QString::number(calcres.daysPassed, 'f', 0));
+
+    ui->plotWidget->plotExpInc(ui->totalCostsLine->text().toDouble(), ui->totalEarningsLine->text().toDouble());
+    ui->plotWidget->update();
 }
 
 void MainWindow::on_actionUpdate_triggered()
@@ -878,18 +927,6 @@ void MainWindow::on_actionDelete_Entry_triggered()
     case expensesTabID:
         deleteEntries(expensesmodel, ui->expensesTableView);
         break;
-    case earningsTabID:
-        deleteEntries(earningsmodel, ui->earningsTableView);
-        break;
-    case monthlyExpensesTabID:
-        deleteEntries(monthlyexpensesmodel, ui->monthlyExpensesTableView);
-        break;
-    case monthlyEarningsTabID:
-        deleteEntries(monthlyearningsmodel, ui->monthlyEarningsTableView);
-        break;
-    case categoriesID:
-        deleteEntries(categoriesmodel, ui->categoriesTableView);
-        break;
     }
 
     updateCalculations();
@@ -907,15 +944,23 @@ void MainWindow::on_actionFull_Screen_triggered()
 void MainWindow::on_actionEdit_Categories_triggered()
 {
     // Open Category Edit dialog
-    CategoryConfigDialog *dialog = new CategoryConfigDialog;
-    dialog->createCategoriesView(sqliteDb1);
-    dialog->exec();
+    CategoryConfigDialog dialog;
+    dialog.createCategoriesView(sqliteDb1);
+    dialog.exec();
 
     // Update database relations
     expensesmodel->relationModel(5)->select();
-    earningsmodel->relationModel(5)->select();
-    monthlyexpensesmodel->relationModel(4)->select();
-    monthlyearningsmodel->relationModel(4)->select();
+}
+
+void MainWindow::on_actionEdit_Payment_Methods_triggered()
+{
+    // Open Payment Methods Edit dialog
+    PaymentMethodsConfigDialog dialog;
+    dialog.createPaymentsMethodView(sqliteDb1);
+    dialog.exec();
+
+    // Update database relations
+    expensesmodel->relationModel(6)->select();
 }
 
 void MainWindow::on_actionToggle_Menubar_triggered()
@@ -943,9 +988,6 @@ void MainWindow::on_actionClose_Database_triggered()
         if (askClose()) {
             sqliteDb1->close();
             ui->expensesTableView->setEnabled(false);
-            ui->earningsTableView->setEnabled(false);
-            ui->monthlyExpensesTableView->setEnabled(false);
-            ui->monthlyEarningsTableView->setEnabled(false);
 
             isOpen=false;
 
@@ -956,20 +998,6 @@ void MainWindow::on_actionClose_Database_triggered()
             // do nothing
         }
     }
-}
-
-void MainWindow::on_actionEdit_Payment_Methods_triggered()
-{
-    // Open Category Edit dialog
-    PaymentMethodsConfigDialog *dialog = new PaymentMethodsConfigDialog;
-    dialog->createPaymentsMethodView(sqliteDb1);
-    dialog->exec();
-
-    // Update database relations
-    expensesmodel->relationModel(6)->select();
-    earningsmodel->relationModel(6)->select();
-    monthlyexpensesmodel->relationModel(5)->select();
-    monthlyearningsmodel->relationModel(5)->select();
 }
 
 // CSV handling functions
@@ -1009,9 +1037,6 @@ int MainWindow::getCatId(QString categorystring)
     if( categoriesmodel->isDirty() ) {
         submit(categoriesmodel);
         expensesmodel->relationModel(5)->select();
-        earningsmodel->relationModel(5)->select();
-        monthlyexpensesmodel->relationModel(4)->select();
-        monthlyearningsmodel->relationModel(4)->select();
     }
 
     return maxid+1;
@@ -1053,9 +1078,6 @@ int MainWindow::getPaymentId(QString paymentstring)
     if( paymentmethodmodel->isDirty() ) {
         submit(paymentmethodmodel);
         expensesmodel->relationModel(6)->select();
-        earningsmodel->relationModel(6)->select();
-        monthlyexpensesmodel->relationModel(5)->select();
-        monthlyearningsmodel->relationModel(5)->select();
     }
 
     return maxid+1;
@@ -1134,15 +1156,6 @@ void MainWindow::on_actionFrom_CSV_new_triggered()
             case expensesTabID:
                 importCSVFile(expensesmodel, fileName, columnMap, dateformat, invertValues, lineskip);
                 break;
-            case earningsTabID:
-                importCSVFile(earningsmodel, fileName, columnMap, dateformat, invertValues, lineskip);
-                break;
-            case monthlyExpensesTabID:
-                importCSVFile(monthlyexpensesmodel, fileName, columnMap, dateformat, invertValues, lineskip);
-                break;
-            case monthlyEarningsTabID:
-                importCSVFile(monthlyearningsmodel, fileName, columnMap, dateformat, invertValues, lineskip);
-                break;
             }
         }
         delete dialog;
@@ -1169,15 +1182,6 @@ void MainWindow::fileToImportDragged(QString fileName)
             case expensesTabID:
                 importCSVFile(expensesmodel, fileName, columnMap, dateformat, invertValues, lineskip);
                 break;
-            case earningsTabID:
-                importCSVFile(earningsmodel, fileName, columnMap, dateformat, invertValues, lineskip);
-                break;
-            case monthlyExpensesTabID:
-                importCSVFile(monthlyexpensesmodel, fileName, columnMap, dateformat, invertValues, lineskip);
-                break;
-            case monthlyEarningsTabID:
-                importCSVFile(monthlyearningsmodel, fileName, columnMap, dateformat, invertValues, lineskip);
-                break;
             }
         }
         delete dialog;
@@ -1200,12 +1204,6 @@ int MainWindow::importCSVFile(MyQSqlRelationalTableModel *model, QString fileNam
 
     // Begin with disabling the updateCalculation slot
     QObject::disconnect(expensesmodel, &QSqlRelationalTableModel::dataChanged,
-                     this, &MainWindow::updateslot);
-    QObject::disconnect(earningsmodel, &QSqlRelationalTableModel::dataChanged,
-                     this, &MainWindow::updateslot);
-    QObject::disconnect(monthlyexpensesmodel, &QSqlRelationalTableModel::dataChanged,
-                     this, &MainWindow::updateslot);
-    QObject::disconnect(monthlyearningsmodel, &QSqlRelationalTableModel::dataChanged,
                      this, &MainWindow::updateslot);
     QObject::disconnect(categoriesmodel, &QSqlRelationalTableModel::dataChanged,
                      this, &MainWindow::updateslot);
@@ -1260,12 +1258,6 @@ int MainWindow::importCSVFile(MyQSqlRelationalTableModel *model, QString fileNam
     // Enable the updateCalculation slot again
     QObject::connect(expensesmodel, &QSqlRelationalTableModel::dataChanged,
                      this, &MainWindow::updateslot);
-    QObject::connect(earningsmodel, &QSqlRelationalTableModel::dataChanged,
-                     this, &MainWindow::updateslot);
-    QObject::connect(monthlyexpensesmodel, &QSqlRelationalTableModel::dataChanged,
-                     this, &MainWindow::updateslot);
-    QObject::connect(monthlyearningsmodel, &QSqlRelationalTableModel::dataChanged,
-                     this, &MainWindow::updateslot);
     QObject::connect(categoriesmodel, &QSqlRelationalTableModel::dataChanged,
                      this, &MainWindow::updateslot);
     QObject::connect(paymentmethodmodel, &QSqlRelationalTableModel::dataChanged,
@@ -1277,6 +1269,20 @@ int MainWindow::importCSVFile(MyQSqlRelationalTableModel *model, QString fileNam
     ui->expensesTableView->resizeColumnsToContents();
 
     return 0;
+}
+
+qreal MainWindow::parseValueString(QString valuestring) {
+    // Find out (via brute force) what locale is most likely
+//    bool commafirst=false;
+//    bool dotfirst=false;
+//    for(int i=0; i<valuestring.size(); i++) {
+//        if (QString::compare(valuestring.at(i), ",") == 0)
+//            commafirst=true;
+//    }
+//    if(!commafirst)
+//        return QLocale(QLocale::German).toDouble(valuestring);
+//    else
+        return QLocale(QLocale::C).toDouble(valuestring);
 }
 
 int MainWindow::processCSVLine(QString line, QMap<int,int> map, QString dateformat, QSqlRecord &record)
@@ -1304,8 +1310,11 @@ int MainWindow::processCSVLine(QString line, QMap<int,int> map, QString dateform
     record.append(QSqlField("category", QVariant::Int));
     record.append(QSqlField("payment", QVariant::Int));
 
-    if( map[amountCol] > 0 )
-        record.setValue(0, values.value(map[amountCol]-1).replace(",", ".") );
+    if( map[amountCol] > 0 ) {
+        qreal value = parseValueString(values.value(map[amountCol]-1));
+        // record.setValue(0, values.value(map[amountCol]-1).replace(",", ".") );
+        record.setValue(0, value );
+    }
     if( map[dateCol] > 0 ) {
         curdate = date.fromString(values.value(map[dateCol]-1),dateformat).toString("yyyy-MM-dd");
         record.setValue(1, curdate);
@@ -1347,12 +1356,11 @@ void MainWindow::setEnableUIDB(bool enable)
     ui->actionEdit_Categories->setEnabled(enable);
     ui->actionEdit_Payment_Methods->setEnabled(enable);
     ui->actionFrom_CSV_new->setEnabled(enable);
+    ui->actionGo_to_Bottom->setEnabled(enable);
+    ui->actionGo_to_Top->setEnabled(enable);
 
     // Disable tableViews until database gets opened
     ui->expensesTableView->setEnabled(enable);
-    ui->monthlyExpensesTableView->setEnabled(enable);
-    ui->earningsTableView->setEnabled(enable);
-    ui->monthlyEarningsTableView->setEnabled(enable);
 }
 
 void MainWindow::on_actionAbout_Qt_triggered()
@@ -1373,7 +1381,7 @@ void MainWindow::unsetSortChecked() {
 void MainWindow::on_actionDatabase_ID_triggered()
 {
     QMessageBox msgBox;
-    if(expensesmodel->isDirty() || earningsmodel->isDirty() ) {
+    if(expensesmodel->isDirty() ) {
         msgBox.setText("BUG: Before you can sort, you have to save first.");
         msgBox.exec();
         unsetSortChecked();
@@ -1382,8 +1390,6 @@ void MainWindow::on_actionDatabase_ID_triggered()
     }
     ui->expensesTableView->sortByColumn(0, Qt::AscendingOrder);
     ui->expensesTableView->setSortingEnabled(false);
-    ui->earningsTableView->sortByColumn(0, Qt::AscendingOrder);
-    ui->earningsTableView->setSortingEnabled(false);
 
     unsetSortChecked();
     ui->actionDatabase_ID->setChecked(true);
@@ -1392,7 +1398,7 @@ void MainWindow::on_actionDatabase_ID_triggered()
 void MainWindow::on_actionAmount_triggered()
 {
     QMessageBox msgBox;
-    if(expensesmodel->isDirty() || earningsmodel->isDirty() ) {
+    if(expensesmodel->isDirty() ) {
         msgBox.setText("BUG: Before you can sort, you have to save first.");
         msgBox.exec();
         unsetSortChecked();
@@ -1401,8 +1407,6 @@ void MainWindow::on_actionAmount_triggered()
     }
     ui->expensesTableView->sortByColumn(1, Qt::AscendingOrder);
     ui->expensesTableView->setSortingEnabled(false);
-    ui->earningsTableView->sortByColumn(1, Qt::AscendingOrder);
-    ui->earningsTableView->setSortingEnabled(false);
 
     unsetSortChecked();
     ui->actionAmount->setChecked(true);
@@ -1411,7 +1415,7 @@ void MainWindow::on_actionAmount_triggered()
 void MainWindow::on_actionDate_triggered()
 {
     QMessageBox msgBox;
-    if(expensesmodel->isDirty() || earningsmodel->isDirty() ) {
+    if(expensesmodel->isDirty() ) {
         msgBox.setText("BUG: Before you can sort, you have to save first.");
         msgBox.exec();
         unsetSortChecked();
@@ -1420,18 +1424,15 @@ void MainWindow::on_actionDate_triggered()
     }
     ui->expensesTableView->sortByColumn(2, Qt::AscendingOrder);
     ui->expensesTableView->setSortingEnabled(false);
-    ui->earningsTableView->sortByColumn(2, Qt::AscendingOrder);
-    ui->earningsTableView->setSortingEnabled(false);
 
     unsetSortChecked();
     ui->actionDate->setChecked(true);
 }
 
-
 void MainWindow::on_actionDescription_triggered()
 {
     QMessageBox msgBox;
-    if(expensesmodel->isDirty() || earningsmodel->isDirty() ) {
+    if(expensesmodel->isDirty() ) {
         msgBox.setText("BUG: Before you can sort, you have to save first.");
         msgBox.exec();
         unsetSortChecked();
@@ -1440,8 +1441,6 @@ void MainWindow::on_actionDescription_triggered()
     }
     ui->expensesTableView->sortByColumn(3, Qt::AscendingOrder);
     ui->expensesTableView->setSortingEnabled(false);
-    ui->earningsTableView->sortByColumn(3, Qt::AscendingOrder);
-    ui->earningsTableView->setSortingEnabled(false);
 
     unsetSortChecked();
     ui->actionDescription->setChecked(true);
@@ -1449,7 +1448,7 @@ void MainWindow::on_actionDescription_triggered()
 void MainWindow::on_actionWhere_triggered()
 {
     QMessageBox msgBox;
-    if(expensesmodel->isDirty() || earningsmodel->isDirty() ) {
+    if(expensesmodel->isDirty() ) {
         msgBox.setText("BUG: Before you can sort, you have to save first.");
         msgBox.exec();
         unsetSortChecked();
@@ -1458,8 +1457,6 @@ void MainWindow::on_actionWhere_triggered()
     }
     ui->expensesTableView->sortByColumn(4, Qt::AscendingOrder);
     ui->expensesTableView->setSortingEnabled(false);
-    ui->earningsTableView->sortByColumn(4, Qt::AscendingOrder);
-    ui->earningsTableView->setSortingEnabled(false);
 
     unsetSortChecked();
     ui->actionWhere->setChecked(true);
@@ -1468,7 +1465,7 @@ void MainWindow::on_actionWhere_triggered()
 void MainWindow::on_actionCategory_triggered()
 {
     QMessageBox msgBox;
-    if(expensesmodel->isDirty() || earningsmodel->isDirty() ) {
+    if(expensesmodel->isDirty() ) {
         msgBox.setText("BUG: Before you can sort, you have to save first.");
         msgBox.exec();
         unsetSortChecked();
@@ -1477,8 +1474,6 @@ void MainWindow::on_actionCategory_triggered()
     }
     ui->expensesTableView->sortByColumn(5, Qt::AscendingOrder);
     ui->expensesTableView->setSortingEnabled(false);
-    ui->earningsTableView->sortByColumn(5, Qt::AscendingOrder);
-    ui->earningsTableView->setSortingEnabled(false);
 
     unsetSortChecked();
     ui->actionCategory->setChecked(true);
@@ -1487,7 +1482,7 @@ void MainWindow::on_actionCategory_triggered()
 void MainWindow::on_actionPayment_Method_triggered()
 {
     QMessageBox msgBox;
-    if(expensesmodel->isDirty() || earningsmodel->isDirty() ) {
+    if(expensesmodel->isDirty() ) {
         msgBox.setText("BUG: Before you can sort, you have to save first.");
         msgBox.exec();
         unsetSortChecked();
@@ -1496,8 +1491,6 @@ void MainWindow::on_actionPayment_Method_triggered()
     }
     ui->expensesTableView->sortByColumn(6, Qt::AscendingOrder);
     ui->expensesTableView->setSortingEnabled(false);
-    ui->earningsTableView->sortByColumn(6, Qt::AscendingOrder);
-    ui->earningsTableView->setSortingEnabled(false);
 
     unsetSortChecked();
     ui->actionPayment_Method->setChecked(true);
@@ -1512,4 +1505,20 @@ void MainWindow::on_actionReport_Bug_triggered()
 void MainWindow::on_actionCopy_triggered()
 {
     // Implement copy
+}
+
+void MainWindow::on_actionGo_to_Top_triggered()
+{
+    // Read all the data
+    while(expensesmodel->canFetchMore())
+        expensesmodel->fetchMore();
+    ui->expensesTableView->scrollToTop();
+}
+
+void MainWindow::on_actionGo_to_Bottom_triggered()
+{
+    // Read all the data
+    while(expensesmodel->canFetchMore())
+        expensesmodel->fetchMore();
+    ui->expensesTableView->scrollToBottom();
 }

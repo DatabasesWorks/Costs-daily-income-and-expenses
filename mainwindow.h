@@ -13,6 +13,7 @@
 
 #include "myqsqlrelationaltablemodel.h"
 #include "databaseapi.h"
+#include "myplots.h"
 
 namespace Ui {
 class MainWindow;
@@ -29,51 +30,40 @@ public:
     SqliteDatabase *sqliteDb1;
 
     struct CalcStruct {   // Declare struct to hold calculated results
-        double total;
+        qreal totalIncome; // should be positive +
+        qreal totalExpenses; // should be negative -
+        qreal totalNet; // (totalincome+totalexpenses)
+        qreal perDayIncome; // +
+        qreal perDayExpenses; // -
+        qreal perDayNet;
+        qreal perMonthIncome; // +
+        qreal perMonthExpenses; // -
+        qreal perMonthNet;
+        qreal perYearIncome; // +
+        qreal perYearExpenses; // -
+        qreal perYearNet;
+        qreal perLineIncome; // totalIncome normalized by number of incomes
+        qreal perLineExpenses; // totalExpenses normalized by number of expenses
+        qint16 daysPassed;
     };
 
     enum TabIDs {
         expensesTabID,
-        earningsTabID,
-        monthlyExpensesTabID,
-        monthlyEarningsTabID,
         projectionsID,
-        categoriesID
+        plotsID
     };
 
 protected:
     void dropEvent(QDropEvent* event);
-
-    void dragEnterEvent(QDragEnterEvent* event)
-    {
-     // if some actions should not be usable, like move, this code must be adopted
-        if(isOpen)
-            event->acceptProposedAction();
-        else
-            event->ignore();
-    }
-
-    void dragMoveEvent(QDragMoveEvent* event)
-    {
-     // if some actions should not be usable, like move, this code must be adopted
-        if(isOpen)
-            event->acceptProposedAction();
-        else
-            event->ignore();
-    }
-
-    void dragLeaveEvent(QDragLeaveEvent* event)
-    {
-        if(isOpen)
-            event->accept();
-        else
-            event->ignore();
-    }
+    void dragEnterEvent(QDragEnterEvent* event);
+    void dragMoveEvent(QDragMoveEvent* event);
+    void dragLeaveEvent(QDragLeaveEvent* event);
 
 public slots:
     void customMenuRequested(QPoint pos);
     void addReceipt();
     void showReceipt();
+    void saveReceipt();
     void removeReceipt();
 
 private slots:
@@ -82,59 +72,42 @@ private slots:
     void on_actionNew_Database_triggered();
     void on_actionNew_Entry_triggered();
     void on_actionSave_triggered();
-
     void on_actionUpdate_triggered();
+    void on_actionDelete_Entry_triggered();
+    void on_actionFull_Screen_triggered();
+    void on_actionEdit_Categories_triggered();
+    void on_actionToggle_Menubar_triggered();
+    void on_actionToggle_Toolbar_triggered();
+    void on_actionClose_Database_triggered();
+    void on_actionEdit_Payment_Methods_triggered();
+    void on_actionDate_triggered();
+    void on_actionDatabase_ID_triggered();
+    void on_actionFrom_CSV_new_triggered();
+    void on_actionAbout_Qt_triggered();
+    void on_actionAmount_triggered();
+    void on_actionDescription_triggered();
+    void on_actionCategory_triggered();
+    void on_actionPayment_Method_triggered();
+    void on_actionWhere_triggered();
+    void on_actionReport_Bug_triggered();
+    void on_actionCopy_triggered();
+    void on_actionGo_to_Top_triggered();
+    void on_actionGo_to_Bottom_triggered();
 
+    void expensesRowHeaderChanged(Qt::Orientation orientation, int first,int last);
     void checkMenubar();
     void updateslot();
 
-    void on_actionDelete_Entry_triggered();
+    void openRecentFile();
 
-    void on_actionFull_Screen_triggered();
-
-    void on_actionEdit_Categories_triggered();
-
-    void on_actionToggle_Menubar_triggered();
-
-    void on_actionToggle_Toolbar_triggered();
-
-    void on_actionClose_Database_triggered();
-
-    void on_actionEdit_Payment_Methods_triggered();
-
-    void expensesRowHeaderChanged(Qt::Orientation orientation, int first,int last);
-    void earningsRowHeaderChanged(Qt::Orientation orientation, int first,int last);
-    void monthlyExpensesRowHeaderChanged(Qt::Orientation orientation, int first,int last);
-    void monthlyEarningsRowHeaderChanged(Qt::Orientation orientation, int first,int last);
-
-    void on_actionDate_triggered();
-
-    void on_actionDatabase_ID_triggered();
-
-    void on_actionFrom_CSV_new_triggered();
-
-    void on_actionAbout_Qt_triggered();
-
-    void on_actionAmount_triggered();
-
-    void on_actionDescription_triggered();
-
-    void on_actionCategory_triggered();
-
-    void on_actionPayment_Method_triggered();
-
-    void on_actionWhere_triggered();
-
-    void on_actionReport_Bug_triggered();
-
-    void on_actionCopy_triggered();
+    void tabDoubleClicked(QModelIndex index);
 
 private:
     CalcStruct calcres;
 
     Ui::MainWindow *ui;
 
-    MyQSqlRelationalTableModel *expensesmodel, *monthlyexpensesmodel, *earningsmodel, *monthlyearningsmodel, *categoriesmodel, *paymentmethodmodel;
+    MyQSqlRelationalTableModel *expensesmodel, *categoriesmodel, *paymentmethodmodel;
 
     QProgressBar *progressBar;
 
@@ -147,6 +120,7 @@ private:
     bool askClose();
 
     void setupSignals();
+    void setupTableViewContectMenu();
 
     int openDatabase(QString fileName);
 
@@ -157,19 +131,15 @@ private:
     void closeEvent(QCloseEvent *event);
 
     void updateCalculations();
+    void updateCalculationsUI();
 
     void submit(MyQSqlRelationalTableModel *model);
 
     void uhideAllRows(QTableView *view, QList<qint8> &rowList);
 
     int createExpensesView();
-    int createEarningsView();
-    int createMonthlyExpensesView();
-    int createMonthlyEarningsView();
     int createCategoriesView();
     int createPaymentsView();
-
-    QList<qint8> expensesHiddenRows, monthlyExpensesHiddenRows, earningsHiddenRows, monthlyEarningsHiddenRows;
 
     void unsetSortChecked();
 
@@ -182,16 +152,34 @@ private:
     int getCatId(QString categorystring);
     int getPaymentId(QString paymentstring);
     void fileToImportDragged(QString fileName);
+    qreal parseValueString(QString valuestring);
 
+    QList<qint8> expensesHiddenRows, monthlyExpensesHiddenRows, earningsHiddenRows, monthlyEarningsHiddenRows;
+
+    MyPlots *expincplot;
+
+    QPalette earningspalette;
+    QPalette expensespalette;
+
+    // Context menu for TableView
     QAction *showReceiptAct;
     QAction *addReceiptAct;
+    QAction *saveReceiptAct;
     QAction *removeReceiptAct;
-
     QMenu *menu;
 
+    // Receipt view
     QGraphicsScene *scene;
     QGraphicsView *view;
     QGraphicsPixmapItem *item;
+
+    // recent file list
+    QString strippedName(const QString &fullFileName);
+    enum { MaxRecentFiles = 4 };
+    QAction *recentFileActs[MaxRecentFiles];
+    void setCurrentFile(const QString &fileName);
+    void updateRecentFileActions();
+    QString curFile;
 };
 
 #endif // MAINWINDOW_H

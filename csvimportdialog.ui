@@ -293,7 +293,14 @@
     </layout>
    </item>
    <item>
-    <widget class="QTextEdit" name="csvTextEdit"/>
+    <widget class="QTextEdit" name="csvTextEdit">
+     <property name="lineWrapMode">
+      <enum>QTextEdit::NoWrap</enum>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+    </widget>
    </item>
    <item>
     <layout class="QVBoxLayout" name="verticalLayout">

@@ -10,7 +10,7 @@ class SqliteDatabase
 public:
     SqliteDatabase(QString dbfilename);
     ~SqliteDatabase();
-    static int CreateDatabase(QString dbFilename);
+    static int CreateDatabase(QString dbFilename, QString errorstr);
 
     QSqlDatabase db;
 

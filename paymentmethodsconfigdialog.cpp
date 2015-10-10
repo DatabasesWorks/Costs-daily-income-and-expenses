@@ -85,6 +85,7 @@ void PaymentMethodsConfigDialog::on_saveButton_clicked()
 void PaymentMethodsConfigDialog::submit(MyQSqlRelationalTableModel *model)
 {
     model->database().transaction();
+
     if (model->submitAll()) {
         model->database().commit();
     } else {
@@ -93,5 +94,6 @@ void PaymentMethodsConfigDialog::submit(MyQSqlRelationalTableModel *model)
                              tr("The database reported an error: %1")
                              .arg(model->lastError().text()));
     }
+
     model->select();
 }

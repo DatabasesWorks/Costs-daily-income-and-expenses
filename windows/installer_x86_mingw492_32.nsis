@@ -1,8 +1,8 @@
 ; ===== Defines =====
 !define /date DATE "%Y%m%d"
 !define APPLICATION_NAME "Costs"
-!define APPLICATION_VERSION "0.0.1-${DATE}"
-!define PROJECT_ROOT "..\.."
+; !define APPLICATION_VERSION "0.0.2-${DATE}"
+!define PROJECT_ROOT ".\"
 !define QT_BINARY_DIR "E:\Qt\5.5\mingw492_32\bin"
 !define QT_PLUGINS_DIR "E:\Qt\5.5\mingw492_32\plugins"
 
@@ -22,12 +22,15 @@ CRCCheck On
 	!error "QT_PLUGINS_DIR is not defined"
 !endif
 
+!getdllversion "${PROJECT_ROOT}\tmp\release\Costs.exe" expv_
+!define APPLICATION_VERSION "${expv_1}.${expv_2}.${expv_3}.${expv_4}-${DATE}"
+
 ; ===== Includes =====
 !include "MUI.nsh"
 
 ; ===== General =====
 Name "${APPLICATION_NAME} ${APPLICATION_VERSION}"
-OutFile "${APPLICATION_NAME}-${APPLICATION_VERSION}-installer.exe"
+OutFile "${APPLICATION_NAME}-${APPLICATION_VERSION}-x86-mingw492_32-installer.exe"
 InstallDir "$PROGRAMFILES\${APPLICATION_NAME}"
 SetCompressor "lzma"
 
@@ -63,10 +66,9 @@ Section ""
 	SetOutPath $INSTDIR
 	
 	CreateDirectory $INSTDIR\platforms
-	CreateDirectory $INSTDIR\plugins
-	CreateDirectory $INSTDIR\plugins\sqldrivers
+	CreateDirectory $INSTDIR\sqldrivers
 	
-	File ${PROJECT_ROOT}\build-Costs-Desktop_Qt_5_5_0_MinGW_32bit-Release\release\Costs.exe
+	File ${PROJECT_ROOT}\tmp\release\Costs.exe
 	File ${QT_BINARY_DIR}\libgcc_s_dw2-1.dll
 	File ${QT_BINARY_DIR}\libstdc++-6.dll
 	File ${QT_BINARY_DIR}\libwinpthread-1.dll
@@ -80,7 +82,7 @@ Section ""
 	File ${QT_PLUGINS_DIR}\platforms\qminimal.dll
 	File ${QT_PLUGINS_DIR}\platforms\qwindows.dll
 	
-	SetOutPath $INSTDIR\plugins\sqldrivers
+	SetOutPath $INSTDIR\sqldrivers
 	File ${QT_PLUGINS_DIR}\sqldrivers\qsqlite.dll
 	
 	SetOutPath $INSTDIR
@@ -124,5 +126,5 @@ SectionEnd
 
 ; ===== Functions =====
 Function RunApplication
-	ExecShell "" "$INSTDIR\Costs.exe"
+	Exec '"$WINDIR\explorer.exe" "$INSTDIR\Costs.exe"'
 FunctionEnd

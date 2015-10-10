@@ -25,14 +25,12 @@ public:
     explicit CategoryConfigDialog(QWidget *parent = 0);
     ~CategoryConfigDialog();
 
-        int createCategoriesView(SqliteDatabase *sqliteDb1);
+    int createCategoriesView(SqliteDatabase *sqliteDb1);
 
 private slots:
-        void on_addButton_clicked();
-
-        int on_removeButton_clicked();
-
-        void on_saveButton_clicked();
+    void on_addButton_clicked();
+    int on_removeButton_clicked();
+    void on_saveButton_clicked();
 
 private:
     Ui::CategoryConfigDialog *ui;
