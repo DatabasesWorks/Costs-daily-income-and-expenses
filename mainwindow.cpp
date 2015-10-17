@@ -67,14 +67,26 @@ MainWindow::MainWindow(QWidget *parent) :
     setupTableViewContectMenu();
 
     // Setup stuff for receipt view
-    scene = new QGraphicsScene;
-    view = new QGraphicsView(scene);
     item = new QGraphicsPixmapItem;
+    scene = new QGraphicsScene;
+    view = new MyGraphicsView(scene);
     view->setGeometry(100, 100, 800, 500);
 
     setAcceptDrops(true);
 
     expincplot = new MyPlots;
+
+    // Setup Category QTableWidget
+    ui->categoryTableWidget->setColumnCount(4);
+    ui->categoryTableWidget->setHorizontalHeaderLabels(QStringList() << tr("Category")
+                                                             << tr("Income")
+                                                             << tr("Expenses")
+                                                             << tr("Total"));
+
+    ui->categoryTableWidget->setSortingEnabled(true);
+    ui->categoryTableWidget->sortByColumn(0,Qt::AscendingOrder);
+
+    updateCalculations();
 }
 
 MainWindow::~MainWindow()
@@ -249,8 +261,10 @@ void MainWindow::showReceipt()
         scene->update();
 
         view->setWindowTitle("Receipt - " + desc);
+        view->fitInView(scene->sceneRect(), Qt::KeepAspectRatio);
         view->update();
 
+        view->hide();
         view->show();
     } else {
         ui->statusBar->showMessage(tr("Selected entry does not have a saved receipt"), STDSTATUSTIME);
@@ -749,7 +763,7 @@ void MainWindow::on_actionNew_Entry_triggered()
     }
 }
 
-void MainWindow::uhideAllRows(QTableView *view, QList<qint8> &rowList)
+void MainWindow::uhideAllRows(QTableView *view, QList<qint64> &rowList)
 {
     int row;
     while(!rowList.isEmpty()) {
@@ -761,8 +775,9 @@ void MainWindow::uhideAllRows(QTableView *view, QList<qint8> &rowList)
 void MainWindow::on_actionSave_triggered()
 {
     if( expensesmodel->isDirty() )
-        submit(expensesmodel);
         uhideAllRows(ui->expensesTableView, expensesHiddenRows);
+        submit(expensesmodel);
+        expensesmodel->select();
     if( categoriesmodel->isDirty() ) {
         submit(categoriesmodel);
         expensesmodel->relationModel(5)->select();
@@ -776,6 +791,42 @@ bool MainWindow::save()
     on_actionSave_triggered();
 
     return 0;
+}
+
+void MainWindow::calcCategory()
+{
+    // Get all the data
+    while(categoriesmodel->canFetchMore())
+        categoriesmodel->fetchMore();
+    while(expensesmodel->canFetchMore())
+        expensesmodel->fetchMore();
+
+    int rowcount = categoriesmodel->rowCount();
+
+    // Fill/Update QMap for categories
+    QString curcat;
+    calcres.categoryids.clear();
+    for (int row=0; row < rowcount; row++) {
+        curcat = categoriesmodel->record(row).value("category").toString();
+        calcres.categoryids[curcat] = row;
+        calcres.categorynames[row] = curcat;
+    }
+
+    rowcount = expensesmodel->rowCount();
+
+    qreal curvalue;
+
+    calcres.perCategoryIncome.clear();
+    calcres.perCategoryExpenses.clear();
+    for (int row=0; row < rowcount; row++) {
+        curvalue = expensesmodel->record(row).value("amount").toDouble();
+        curcat = expensesmodel->record(row).value("category").toString();
+        if( curvalue < 0 ) {
+            calcres.perCategoryExpenses[calcres.categoryids[curcat]] += curvalue;
+        } else {
+            calcres.perCategoryIncome[calcres.categoryids[curcat]] += curvalue;
+        }
+    }
 }
 
 void MainWindow::updateCalculations()
@@ -800,12 +851,10 @@ void MainWindow::updateCalculations()
 
         int expcount=0, earncount=0;
         qreal curvalue=0;
-        for (int row=0; row < rowcount; row++)
-        {
+        for (int row=0; row < rowcount; row++) {
             //  progressbar stuff
-            pbvalue = 100/(double)rowcount*(row+1);
+            pbvalue = 50/(double)rowcount*(row+1);
             progressBar->setValue(pbvalue);
-
 
             curvalue = expensesmodel->record(row).value("amount").toDouble();
             curdate = QDate::fromString(expensesmodel->record(row).value("date").toString(),"yyyy-MM-dd");
@@ -822,7 +871,7 @@ void MainWindow::updateCalculations()
 
         lastdate = QDate::currentDate();
 
-        qint16 dayspassed = firstdate.daysTo(lastdate) + 1;
+        qint64 dayspassed = firstdate.daysTo(lastdate) + 1;
 
         if(rowcount == 0)
             dayspassed = 0;
@@ -842,6 +891,9 @@ void MainWindow::updateCalculations()
         calcres.perLineIncome = totalincome/earncount;
         calcres.perLineExpenses = totalexpenses/earncount;;
         calcres.daysPassed = dayspassed;
+
+        calcCategory();
+        progressBar->setValue(100);
 
         updateCalculationsUI();
 
@@ -872,6 +924,18 @@ void MainWindow::updateCalculationsUI()
 
     ui->plotWidget->plotExpInc(ui->totalCostsLine->text().toDouble(), ui->totalEarningsLine->text().toDouble());
     ui->plotWidget->update();
+
+    // Update category table
+    ui->categoryTableWidget->setSortingEnabled(false);
+    ui->categoryTableWidget->setRowCount(0);
+    ui->categoryTableWidget->setRowCount(calcres.categoryids.size());
+    for(int c=0; c<calcres.categoryids.size(); c++) {
+        ui->categoryTableWidget->setItem(c, 0, new QTableWidgetItem(calcres.categorynames[c]));
+        ui->categoryTableWidget->setItem(c, 1, new QTableWidgetItem(QString::number(calcres.perCategoryIncome[c],'f',2)));
+        ui->categoryTableWidget->setItem(c, 2, new QTableWidgetItem(QString::number(calcres.perCategoryExpenses[c],'f',2)));
+        ui->categoryTableWidget->setItem(c, 3, new QTableWidgetItem(QString::number(calcres.perCategoryIncome[c] + calcres.perCategoryExpenses[c],'f',2)));
+    }
+    ui->categoryTableWidget->setSortingEnabled(true);
 }
 
 void MainWindow::on_actionUpdate_triggered()
@@ -901,23 +965,28 @@ void MainWindow::deleteEntries(MyQSqlRelationalTableModel *model, QTableView *vi
     QModelIndex current;
     QModelIndexList selected;
 
-    progressBar->show();
-    int pbvalue=0;
+    QMessageBox::StandardButton ret;
+    ret = QMessageBox::warning(this, tr("Costs"),
+                 tr("Warning: Do you really want to delete the selected rows?"),
+                 QMessageBox::Ok | QMessageBox::Cancel);
+    if (ret == QMessageBox::Ok) {
+        progressBar->show();
+        int pbvalue=0;
 
-    selmodel = view->selectionModel();
-    current = selmodel->currentIndex();
-    selected = selmodel->selectedIndexes(); // list of "selected" items
-    for (int i = 0; i < selected.size(); ++i) {
-        //  progressbar stuff
-        pbvalue = 100/(double)selected.size()*(i+1);
-        progressBar->setValue(pbvalue);
+        selmodel = view->selectionModel();
+        current = selmodel->currentIndex();
+        selected = selmodel->selectedIndexes(); // list of "selected" items
+        for (int i = 0; i < selected.size(); ++i) {
+            //  progressbar stuff
+            pbvalue = 100/(double)selected.size()*(i+1);
+            progressBar->setValue(pbvalue);
 
-        selected.at(i).row();
-        model->removeRows( selected.at(i).row(), 1);
+            selected.at(i).row();
+            model->removeRows( selected.at(i).row(), 1);
+        }
+
+        progressBar->hide();
     }
-
-    progressBar->hide();
-
 }
 
 void MainWindow::on_actionDelete_Entry_triggered()
@@ -1083,7 +1152,7 @@ int MainWindow::getPaymentId(QString paymentstring)
     return maxid+1;
 }
 
-QStringList MainWindow::parseLine(QString line)
+QStringList MainWindow::parseLine(QString line, QString separator)
 {
     QStringList list;
     QString curval;
@@ -1105,7 +1174,7 @@ QStringList MainWindow::parseLine(QString line)
         curchar = line[cc];
         nextchar = line[cc+1];
         if( !quoted ) {
-            if(QString::compare(curchar,",",Qt::CaseSensitive) == 0 ) {
+            if(QString::compare(curchar, separator, Qt::CaseSensitive) == 0 ) {
                 if(QString::compare(nextchar,"\"",Qt::CaseSensitive) == 0 ) {
                     quoted = true;
                     // skip the "
@@ -1126,6 +1195,12 @@ QStringList MainWindow::parseLine(QString line)
         }
     }
 
+    // add the last entry if not empty
+    if(! curval.isEmpty()) {
+        list.append(curval);
+        curval.clear();
+    }
+
     if(quoted)
         qDebug() << "ERROR IN CSV IMPORT, STILL QUOTED";
 
@@ -1136,25 +1211,23 @@ QStringList MainWindow::parseLine(QString line)
 
 void MainWindow::on_actionFrom_CSV_new_triggered()
 {
-    QMap<int, int> columnMap;
-    int lineskip;
-    QString dateformat;
-
     QString fileName = QFileDialog::getOpenFileName(this, tr("Import CSV"),"",
                                                     tr("CSV (*.csv)"));
 
-    bool invertValues = false;
-
     if (!fileName.isEmpty()) {
         CSVImportDialog *dialog = new CSVImportDialog;
+        CSVImportDialog::CsvImportParams params;
+
         dialog->createCSVImportView(fileName);
         if(dialog->exec()) {
-            dialog->returnData(columnMap, lineskip, dateformat, invertValues);
+            dialog->returnData(params);
 
             switch(ui->tabWidget->currentIndex())
             {
             case expensesTabID:
-                importCSVFile(expensesmodel, fileName, columnMap, dateformat, invertValues, lineskip);
+                importCSVFile(expensesmodel, fileName, params.columnMap, params.dateformat,
+                              params.invert, params.lineskip, params.separator, params.locale);
+                ui->expensesTableView->scrollToBottom();
                 break;
             }
         }
@@ -1165,22 +1238,20 @@ void MainWindow::on_actionFrom_CSV_new_triggered()
 
 void MainWindow::fileToImportDragged(QString fileName)
 {
-    QMap<int, int> columnMap;
-    int lineskip;
-    QString dateformat;
-
-    bool invertValues = false;
-
     if (!fileName.isEmpty()) {
         CSVImportDialog *dialog = new CSVImportDialog;
+        CSVImportDialog::CsvImportParams params;
+
         dialog->createCSVImportView(fileName);
         if(dialog->exec()) {
-            dialog->returnData(columnMap, lineskip, dateformat, invertValues);
+            dialog->returnData(params);
 
             switch(ui->tabWidget->currentIndex())
             {
             case expensesTabID:
-                importCSVFile(expensesmodel, fileName, columnMap, dateformat, invertValues, lineskip);
+                importCSVFile(expensesmodel, fileName, params.columnMap, params.dateformat,
+                              params.invert, params.lineskip, params.separator, params.locale);
+                ui->expensesTableView->scrollToBottom();
                 break;
             }
         }
@@ -1189,7 +1260,8 @@ void MainWindow::fileToImportDragged(QString fileName)
     }
 }
 
-int MainWindow::importCSVFile(MyQSqlRelationalTableModel *model, QString fileName, QMap<int, int> map, QString dateformat, bool invertValues, int lineskip)
+int MainWindow::importCSVFile(MyQSqlRelationalTableModel *model, QString fileName, QMap<int, int> map,
+                              QString dateformat, bool invertValues, int lineskip, QString separator, QLocale locale)
 {
     enum ColMapEnum{
         amountCol,
@@ -1240,7 +1312,7 @@ int MainWindow::importCSVFile(MyQSqlRelationalTableModel *model, QString fileNam
 
                 record.clear();
 
-                processCSVLine(line, map, dateformat, record);
+                processCSVLine(line, map, dateformat, separator, locale, record);
 
                 if(invertValues)
                     record.setValue(0, -record.value(0).toReal());
@@ -1271,7 +1343,7 @@ int MainWindow::importCSVFile(MyQSqlRelationalTableModel *model, QString fileNam
     return 0;
 }
 
-qreal MainWindow::parseValueString(QString valuestring) {
+qreal MainWindow::parseValueString(QLocale locale, QString valuestring) {
     // Find out (via brute force) what locale is most likely
 //    bool commafirst=false;
 //    bool dotfirst=false;
@@ -1282,10 +1354,10 @@ qreal MainWindow::parseValueString(QString valuestring) {
 //    if(!commafirst)
 //        return QLocale(QLocale::German).toDouble(valuestring);
 //    else
-        return QLocale(QLocale::C).toDouble(valuestring);
+        return locale.toDouble(valuestring);
 }
 
-int MainWindow::processCSVLine(QString line, QMap<int,int> map, QString dateformat, QSqlRecord &record)
+int MainWindow::processCSVLine(QString line, QMap<int,int> map, QString dateformat, QString separator, QLocale locale, QSqlRecord &record)
 {
     enum ColMapEnum{
         amountCol,
@@ -1301,7 +1373,7 @@ int MainWindow::processCSVLine(QString line, QMap<int,int> map, QString dateform
     int catid = 1;
     int paymentid = 1;
 
-    QStringList values = parseLine(line);
+    QStringList values = parseLine(line, separator);
 
     record.append(QSqlField("amount", QVariant::Double));
     record.append(QSqlField("date", QVariant::String));
@@ -1311,7 +1383,7 @@ int MainWindow::processCSVLine(QString line, QMap<int,int> map, QString dateform
     record.append(QSqlField("payment", QVariant::Int));
 
     if( map[amountCol] > 0 ) {
-        qreal value = parseValueString(values.value(map[amountCol]-1));
+        qreal value = parseValueString(locale, values.value(map[amountCol]-1));
         // record.setValue(0, values.value(map[amountCol]-1).replace(",", ".") );
         record.setValue(0, value );
     }

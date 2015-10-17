@@ -4,6 +4,7 @@
 #include <QDialog>
 #include <QMap>
 #include <QSqlRecord>
+#include <QLocale>
 
 #include "myqsqlrelationaltablemodel.h"
 
@@ -16,11 +17,24 @@ class CSVImportDialog : public QDialog
     Q_OBJECT
 
 public:
+    struct CsvImportParams {
+        QMap<int, int> columnMap;
+
+        int lineskip;
+        bool invert;
+
+        QString dateformat;
+        QString separator;
+
+        QLocale locale;
+    };
+
     explicit CSVImportDialog(QWidget *parent = 0);
     ~CSVImportDialog();
 
     void createCSVImportView(QString filenamein);
-    void returnData(QMap<int, int> &columnMap, int &lineskipret, QString &dateformatret, bool &invert);
+    void returnData(QMap<int, int> &columnMap, int &lineskipret, QString &dateformatret, bool &invert, QString &separator);
+    void returnData(CsvImportParams &params);
 
 private slots:
     void on_importButton_clicked();
@@ -35,6 +49,8 @@ private:
 
     int processCSVLine(QString line, QSqlRecord &record);
     QStringList parseLine(QString line);
+
+    void prepareLocales();
 
     MyQSqlRelationalTableModel *importmodel;
 

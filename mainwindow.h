@@ -10,10 +10,12 @@
 #include <QGraphicsScene>
 #include <QDragEnterEvent>
 #include <QDragLeaveEvent>
+#include <QMap>
 
 #include "myqsqlrelationaltablemodel.h"
 #include "databaseapi.h"
 #include "myplots.h"
+#include "mygraphicsview.h"
 
 namespace Ui {
 class MainWindow;
@@ -44,7 +46,12 @@ public:
         qreal perYearNet;
         qreal perLineIncome; // totalIncome normalized by number of incomes
         qreal perLineExpenses; // totalExpenses normalized by number of expenses
-        qint16 daysPassed;
+        qint64 daysPassed;
+
+        QMap<QString, qint64> categoryids;
+        QMap<qint64, QString> categorynames;
+        QMap<qint64, qreal> perCategoryIncome;
+        QMap<qint64, qreal> perCategoryExpenses;
     };
 
     enum TabIDs {
@@ -130,12 +137,13 @@ private:
     void readSettings();
     void closeEvent(QCloseEvent *event);
 
+    void calcCategory();
     void updateCalculations();
     void updateCalculationsUI();
 
     void submit(MyQSqlRelationalTableModel *model);
 
-    void uhideAllRows(QTableView *view, QList<qint8> &rowList);
+    void uhideAllRows(QTableView *view, QList<qint64> &rowList);
 
     int createExpensesView();
     int createCategoriesView();
@@ -146,15 +154,16 @@ private:
     void deleteEntries(MyQSqlRelationalTableModel *model, QTableView *view);
 
     // CSV handling functions
-    int importCSVFile(MyQSqlRelationalTableModel *model, QString fileName, QMap<int, int> map, QString dateformat, bool invertValues, int lineskip);
-    int processCSVLine(QString line, QMap<int,int> map, QString dateformat, QSqlRecord &record);
-    QStringList parseLine(QString line);
+    int importCSVFile(MyQSqlRelationalTableModel *model, QString fileName, QMap<int, int> map, QString dateformat,
+                      bool invertValues, int lineskip, QString separator, QLocale locale);
+    int processCSVLine(QString line, QMap<int,int> map, QString dateformat, QString separator, QLocale locale, QSqlRecord &record);
+    QStringList parseLine(QString line, QString separator);
     int getCatId(QString categorystring);
     int getPaymentId(QString paymentstring);
     void fileToImportDragged(QString fileName);
-    qreal parseValueString(QString valuestring);
+    qreal parseValueString(QLocale locale, QString valuestring);
 
-    QList<qint8> expensesHiddenRows, monthlyExpensesHiddenRows, earningsHiddenRows, monthlyEarningsHiddenRows;
+    QList<qint64> expensesHiddenRows;
 
     MyPlots *expincplot;
 
@@ -169,9 +178,9 @@ private:
     QMenu *menu;
 
     // Receipt view
-    QGraphicsScene *scene;
-    QGraphicsView *view;
     QGraphicsPixmapItem *item;
+    QGraphicsScene *scene;
+    MyGraphicsView *view;
 
     // recent file list
     QString strippedName(const QString &fullFileName);

@@ -15,7 +15,13 @@ CSVImportDialog::CSVImportDialog(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    prepareLocales();
+
     readSettings();
+}
+
+void CSVImportDialog::prepareLocales() {
+
 }
 
 CSVImportDialog::~CSVImportDialog()
@@ -53,12 +59,14 @@ void CSVImportDialog::createCSVImportView(QString filenamein)
 
 }
 
-void CSVImportDialog::returnData(QMap<int, int> &columnMap, int &lineskipret, QString &dateformatret, bool &invert)
+void CSVImportDialog::returnData(CsvImportParams &params)
 {
-    columnMap = cmap;
-    lineskipret = lineskip;
-    dateformatret = ui->dateFormatEdit->text();
-    invert = invertValue;
+    params.columnMap = cmap;
+    params.lineskip = lineskip;
+    params.dateformat = ui->dateFormatEdit->text();
+    params.invert = invertValue;
+    params.separator = ui->separatorEdit->text();
+    params.locale = QLocale(ui->localeEdit->text());
 }
 
 void CSVImportDialog::on_importButton_clicked()
@@ -183,10 +191,11 @@ void CSVImportDialog::writeSettings()
     settings.setValue("paymentValue", ui->paymentEdit->text());
 
     settings.setValue("lineskip", ui->lineskipSpinBox->value());
-
     settings.setValue("invertChecked", ui->invertCheck->checkState());
 
     settings.setValue("dateformat", ui->dateFormatEdit->text());
+    settings.setValue("separator", ui->separatorEdit->text());
+    settings.setValue("locale", ui->localeEdit->text());
     settings.endGroup();
 }
 
@@ -210,10 +219,11 @@ void CSVImportDialog::readSettings()
     ui->paymentEdit->setText(settings.value("paymentValue", qint8(6)).toString());
 
     ui->lineskipSpinBox->setValue(settings.value("lineskip", qint8(4)).toInt());
-
     ui->invertCheck->setChecked(settings.value("invertChecked", false).toBool());
 
     ui->dateFormatEdit->setText(settings.value("dateformat","M/d/yyyy").toString());
+    ui->separatorEdit->setText(settings.value("separator",",").toString());
+    ui->localeEdit->setText(settings.value("locale","C").toString());
 
     settings.endGroup();
 }
@@ -237,5 +247,9 @@ void CSVImportDialog::on_defaultsButton_clicked()
     ui->lineskipSpinBox->setValue(4);
 
     ui->dateFormatEdit->setText("M/d/yyyy");
+
+    ui->separatorEdit->setText(",");
+
+    ui->localeEdit->setText("C");
 
 }

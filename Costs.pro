@@ -13,7 +13,7 @@ TEMPLATE = app
 
 VERSION_MAJOR = 0
 VERSION_MINOR = 0
-VERSION_PATCH = 3
+VERSION_PATCH = 4
 VERSION_BUILD = 0
 
 # Get build from file
@@ -49,7 +49,9 @@ SOURCES += main.cpp\
     myqsqlrelationaltablemodel.cpp \
     paymentmethodsconfigdialog.cpp \
     csvimportdialog.cpp \
-    myplots.cpp
+    myplots.cpp \
+    mygraphicsview.cpp \
+    receiptview.cpp
 
 HEADERS  += mainwindow.h \
     databaseapi.h \
@@ -57,12 +59,15 @@ HEADERS  += mainwindow.h \
     myqsqlrelationaltablemodel.h \
     paymentmethodsconfigdialog.h \
     csvimportdialog.h \
-    myplots.h
+    myplots.h \
+    mygraphicsview.h \
+    receiptview.h
 
 FORMS    += mainwindow.ui \
     categoryconfigdialog.ui \
     paymentmethodsconfigdialog.ui \
-    csvimportdialog.ui
+    csvimportdialog.ui \
+    receiptview.ui
 
 RESOURCES += \
     icons.qrc

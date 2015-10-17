@@ -133,22 +133,6 @@
        </property>
       </widget>
      </item>
-     <item row="3" column="1">
-      <widget class="QSpinBox" name="lineskipSpinBox">
-       <property name="maximumSize">
-        <size>
-         <width>40</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="toolTip">
-        <string>Skip the first n lines of the file</string>
-       </property>
-       <property name="value">
-        <number>4</number>
-       </property>
-      </widget>
-     </item>
      <item row="0" column="9">
       <widget class="QLineEdit" name="descriptionEdit">
        <property name="maximumSize">
@@ -172,16 +156,6 @@
        </property>
        <property name="checked">
         <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="0">
-      <widget class="QLabel" name="lineskipLabel">
-       <property name="text">
-        <string>Lines to Skip</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
        </property>
       </widget>
      </item>
@@ -265,6 +239,12 @@
      </item>
      <item row="0" column="7">
       <widget class="QLineEdit" name="dateFormatEdit">
+       <property name="maximumSize">
+        <size>
+         <width>80</width>
+         <height>16777215</height>
+        </size>
+       </property>
        <property name="toolTip">
         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:14px; color:#000000;&quot;&gt;Set the format for the date import.&lt;br/&gt;These expressions may be used for the format:&lt;/span&gt;&lt;br/&gt;&lt;/p&gt;&lt;table border=&quot;0&quot; style=&quot; margin-top:0px; margin-bottom:25px; margin-left:15px; margin-right:0px;&quot; cellspacing=&quot;2&quot; cellpadding=&quot;0&quot; bgcolor=&quot;#f6f6f6&quot;&gt;&lt;thead&gt;&lt;tr&gt;&lt;td style=&quot; padding-left:10; padding-right:10; padding-top:5; padding-bottom:5;&quot;&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; font-weight:600; color:#000000;&quot;&gt;Expression&lt;/span&gt;&lt;/p&gt;&lt;/td&gt;&lt;td style=&quot; padding-left:10; padding-right:10; padding-top:5; padding-bottom:5;&quot;&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; font-weight:600; color:#000000;&quot;&gt;Output&lt;/span&gt;&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tr&gt;&lt;td bgcolor=&quot;#f6f6f6&quot; style=&quot; vertical-align:top; padding-left:20; padding-right:15; padding-top:3; padding-bottom:3;&quot;&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; color:#66666e; background-color:#f6f6f6;&quot;&gt;d&lt;/span&gt;&lt;/p&gt;&lt;/td&gt;&lt;td bgcolor=&quot;#f6f6f6&quot; style=&quot; vertical-align:top; padding-left:20; padding-right:15; padding-top:3; padding-bottom:3;&quot;&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; color:#66666e; background-color:#f6f6f6;&quot;&gt;The day as a number without a leading zero (1 to 31)&lt;/span&gt;&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td bgcolor=&quot;#ffffff&quot; style=&quot; vertical-align:top; padding-left:20; padding-right:15; padding-top:3; padding-bottom:3;&quot;&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; color:#66666e; background-color:#ffffff;&quot;&gt;dd&lt;/span&gt;&lt;/p&gt;&lt;/td&gt;&lt;td bgcolor=&quot;#ffffff&quot; style=&quot; vertical-align:top; padding-left:20; padding-right:15; padding-top:3; padding-bottom:3;&quot;&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; color:#66666e; background-color:#ffffff;&quot;&gt;The day as a number with a leading zero (01 to 31)&lt;/span&gt;&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td bgcolor=&quot;#f6f6f6&quot; style=&quot; vertical-align:top; padding-left:20; padding-right:15; padding-top:3; padding-bottom:3;&quot;&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; color:#66666e; background-color:#f6f6f6;&quot;&gt;ddd&lt;/span&gt;&lt;/p&gt;&lt;/td&gt;&lt;td bgcolor=&quot;#f6f6f6&quot; style=&quot; vertical-align:top; padding-left:20; padding-right:15; padding-top:3; padding-bottom:3;&quot;&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; color:#66666e; background-color:#f6f6f6;&quot;&gt;The abbreviated localized day name (e.g. 'Mon' to 'Sun'). Uses the system locale to localize the name, i.e.&lt;/span&gt;&lt;a href=&quot;qthelp://org.qt-project.qtcore.550/qtcore/qlocale.html#system&quot;&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; text-decoration: underline; color:#007330;&quot;&gt;QLocale::system&lt;/span&gt;&lt;/a&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; color:#66666e;&quot;&gt;().&lt;/span&gt;&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td bgcolor=&quot;#ffffff&quot; style=&quot; vertical-align:top; padding-left:20; padding-right:15; padding-top:3; padding-bottom:3;&quot;&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; color:#66666e; background-color:#ffffff;&quot;&gt;dddd&lt;/span&gt;&lt;/p&gt;&lt;/td&gt;&lt;td bgcolor=&quot;#ffffff&quot; style=&quot; vertical-align:top; padding-left:20; padding-right:15; padding-top:3; padding-bottom:3;&quot;&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; color:#66666e; background-color:#ffffff;&quot;&gt;The long localized day name (e.g. 'Monday' to 'Sunday'). Uses the system locale to localize the name, i.e.&lt;/span&gt;&lt;a href=&quot;qthelp://org.qt-project.qtcore.550/qtcore/qlocale.html#system&quot;&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; text-decoration: underline; color:#007330;&quot;&gt;QLocale::system&lt;/span&gt;&lt;/a&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; color:#66666e;&quot;&gt;().&lt;/span&gt;&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td bgcolor=&quot;#f6f6f6&quot; style=&quot; vertical-align:top; padding-left:20; padding-right:15; padding-top:3; padding-bottom:3;&quot;&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; color:#66666e; background-color:#f6f6f6;&quot;&gt;M&lt;/span&gt;&lt;/p&gt;&lt;/td&gt;&lt;td bgcolor=&quot;#f6f6f6&quot; style=&quot; vertical-align:top; padding-left:20; padding-right:15; padding-top:3; padding-bottom:3;&quot;&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; color:#66666e; background-color:#f6f6f6;&quot;&gt;The month as a number without a leading zero (1 to 12)&lt;/span&gt;&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td bgcolor=&quot;#ffffff&quot; style=&quot; vertical-align:top; padding-left:20; padding-right:15; padding-top:3; padding-bottom:3;&quot;&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; color:#66666e; background-color:#ffffff;&quot;&gt;MM&lt;/span&gt;&lt;/p&gt;&lt;/td&gt;&lt;td bgcolor=&quot;#ffffff&quot; style=&quot; vertical-align:top; padding-left:20; padding-right:15; padding-top:3; padding-bottom:3;&quot;&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; color:#66666e; background-color:#ffffff;&quot;&gt;The month as a number with a leading zero (01 to 12)&lt;/span&gt;&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td bgcolor=&quot;#f6f6f6&quot; style=&quot; vertical-align:top; padding-left:20; padding-right:15; padding-top:3; padding-bottom:3;&quot;&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; color:#66666e; background-color:#f6f6f6;&quot;&gt;MMM&lt;/span&gt;&lt;/p&gt;&lt;/td&gt;&lt;td bgcolor=&quot;#f6f6f6&quot; style=&quot; vertical-align:top; padding-left:20; padding-right:15; padding-top:3; padding-bottom:3;&quot;&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; color:#66666e; background-color:#f6f6f6;&quot;&gt;The abbreviated localized month name (e.g. 'Jan' to 'Dec'). Uses the system locale to localize the name, i.e.&lt;/span&gt;&lt;a href=&quot;qthelp://org.qt-project.qtcore.550/qtcore/qlocale.html#system&quot;&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; text-decoration: underline; color:#007330;&quot;&gt;QLocale::system&lt;/span&gt;&lt;/a&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; color:#66666e;&quot;&gt;().&lt;/span&gt;&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td bgcolor=&quot;#ffffff&quot; style=&quot; vertical-align:top; padding-left:20; padding-right:15; padding-top:3; padding-bottom:3;&quot;&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; color:#66666e; background-color:#ffffff;&quot;&gt;MMMM&lt;/span&gt;&lt;/p&gt;&lt;/td&gt;&lt;td bgcolor=&quot;#ffffff&quot; style=&quot; vertical-align:top; padding-left:20; padding-right:15; padding-top:3; padding-bottom:3;&quot;&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; color:#66666e; background-color:#ffffff;&quot;&gt;The long localized month name (e.g. 'January' to 'December'). Uses the system locale to localize the name, i.e.&lt;/span&gt;&lt;a href=&quot;qthelp://org.qt-project.qtcore.550/qtcore/qlocale.html#system&quot;&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; text-decoration: underline; color:#007330;&quot;&gt;QLocale::system&lt;/span&gt;&lt;/a&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; color:#66666e;&quot;&gt;().&lt;/span&gt;&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td bgcolor=&quot;#f6f6f6&quot; style=&quot; vertical-align:top; padding-left:20; padding-right:15; padding-top:3; padding-bottom:3;&quot;&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; color:#66666e; background-color:#f6f6f6;&quot;&gt;yy&lt;/span&gt;&lt;/p&gt;&lt;/td&gt;&lt;td bgcolor=&quot;#f6f6f6&quot; style=&quot; vertical-align:top; padding-left:20; padding-right:15; padding-top:3; padding-bottom:3;&quot;&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; color:#66666e; background-color:#f6f6f6;&quot;&gt;The year as two digit number (00 to 99)&lt;/span&gt;&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td bgcolor=&quot;#ffffff&quot; style=&quot; vertical-align:top; padding-left:20; padding-right:15; padding-top:3; padding-bottom:3;&quot;&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; color:#66666e; background-color:#ffffff;&quot;&gt;yyyy&lt;/span&gt;&lt;/p&gt;&lt;/td&gt;&lt;td bgcolor=&quot;#ffffff&quot; style=&quot; vertical-align:top; padding-left:20; padding-right:15; padding-top:3; padding-bottom:3;&quot;&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:12px; color:#66666e; background-color:#ffffff;&quot;&gt;The year as four digit number. If the year is negative, a minus sign is prepended in addition.&lt;/span&gt;&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
@@ -283,10 +263,106 @@
        </property>
       </widget>
      </item>
-     <item row="3" column="3" colspan="2">
+     <item row="2" column="0">
+      <widget class="QLabel" name="separatorLabel">
+       <property name="text">
+        <string>Separator</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QLineEdit" name="separatorEdit">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>40</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="inputMask">
+        <string>xxxx</string>
+       </property>
+       <property name="text">
+        <string>,</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="2">
+      <spacer name="horizontalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="2" column="3" colspan="2">
       <widget class="QCheckBox" name="invertCheck">
        <property name="text">
         <string>Invert values</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="8">
+      <widget class="QLabel" name="lineskipLabel">
+       <property name="text">
+        <string>Lines to Skip</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="9">
+      <widget class="QSpinBox" name="lineskipSpinBox">
+       <property name="maximumSize">
+        <size>
+         <width>40</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="toolTip">
+        <string>Skip the first n lines of the file</string>
+       </property>
+       <property name="value">
+        <number>4</number>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="label_3">
+       <property name="text">
+        <string>Locale</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1" colspan="2">
+      <widget class="QLineEdit" name="localeEdit">
+       <property name="toolTip">
+        <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:20px;&quot;&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:14px; color:#000000;&quot;&gt;Use the specified locale for the number conversion.&lt;br /&gt;It has the format &lt;br /&gt;&lt;/span&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:14px; font-style:italic; color:#000000;&quot;&gt;language[_script][_country][.codeset][@modifier]&lt;/span&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:14px; color:#000000;&quot;&gt;&lt;br /&gt;or&lt;br /&gt;&lt;/span&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:14px; font-style:italic; color:#000000;&quot;&gt;C&lt;/span&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:14px; color:#000000;&quot;&gt;&lt;br /&gt;where:&lt;/span&gt;&lt;/p&gt;
+&lt;ul style=&quot;margin-top: 0px; margin-bottom: 0px; margin-left: 0px; margin-right: 0px; -qt-list-indent: 1;&quot;&gt;&lt;li style=&quot; font-family:'Arial,Helvetica'; font-size:14px; color:#000000;&quot; style=&quot; margin-top:10px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:14px;&quot;&gt;language is a lowercase, two-letter, ISO 639 language code (also some three-letter codes),&lt;/span&gt;&lt;/li&gt;
+&lt;li style=&quot; font-family:'Arial,Helvetica'; font-size:14px; color:#000000;&quot; style=&quot; margin-top:0px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:14px;&quot;&gt;script is a titlecase, four-letter, ISO 15924 script code,&lt;/span&gt;&lt;/li&gt;
+&lt;li style=&quot; font-family:'Arial,Helvetica'; font-size:14px; color:#000000;&quot; style=&quot; margin-top:0px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:14px;&quot;&gt;country is an uppercase, two-letter, ISO 3166 country code (also &amp;quot;419&amp;quot; as defined by United Nations),&lt;/span&gt;&lt;/li&gt;
+&lt;li style=&quot; font-family:'Arial,Helvetica'; font-size:14px; color:#000000;&quot; style=&quot; margin-top:0px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:14px;&quot;&gt;and codeset and modifier are ignored.&lt;/span&gt;&lt;/li&gt;&lt;/ul&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:20px;&quot;&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:14px; color:#000000;&quot;&gt;The separator can be either underscore or a minus sign.&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:20px;&quot;&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:14px; color:#000000;&quot;&gt;If the string violates the locale format, or language is not a valid ISO 639 code, the &amp;quot;C&amp;quot; locale is used instead. If country is not present, or is not a valid ISO 3166 code, the most appropriate country is chosen for the specified language.&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:20px;&quot;&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:14px; color:#000000;&quot;&gt;Examples for number formats:&lt;br /&gt;Number = 1.234,56 -&amp;gt; use &lt;/span&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:14px; font-style:italic; color:#000000;&quot;&gt;de_DE&lt;/span&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:14px; color:#000000;&quot;&gt;&lt;br /&gt;Number = 1,234.56 -&amp;gt; use &lt;/span&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:14px; font-style:italic; color:#000000;&quot;&gt;en_US&lt;br /&gt;&lt;/span&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:14px; color:#000000;&quot;&gt;Number = 1234.56 -&amp;gt; use &lt;/span&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:14px; font-style:italic; color:#000000;&quot;&gt;C&lt;/span&gt;&lt;span style=&quot; font-family:'Arial,Helvetica'; font-size:14px; color:#000000;&quot;&gt;&lt;br /&gt;&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+       <property name="text">
+        <string>C</string>
        </property>
       </widget>
      </item>
@@ -367,7 +443,6 @@
   <tabstop>categoryEdit</tabstop>
   <tabstop>paymentCheck</tabstop>
   <tabstop>paymentEdit</tabstop>
-  <tabstop>lineskipSpinBox</tabstop>
   <tabstop>csvTextEdit</tabstop>
   <tabstop>cancelButton</tabstop>
   <tabstop>importButton</tabstop>
