@@ -13,7 +13,7 @@ TEMPLATE = app
 
 VERSION_MAJOR = 0
 VERSION_MINOR = 0
-VERSION_PATCH = 4
+VERSION_PATCH = 5
 VERSION_BUILD = 0
 
 # Get build from file
@@ -22,7 +22,7 @@ greaterThan(VERSION_BUILD_FILE, 0) {
 	VERSION_BUILD = $$format_number($${VERSION_BUILD_FILE}, ibase=10 width=1 zeropad)
 }
 
-QMAKE_TARGET_COMPANY = "AbyleDotOrg"
+QMAKE_TARGET_COMPANY = "Abyle"
 QMAKE_TARGET_PRODUCT = "Costs"
 QMAKE_TARGET_DESCRIPTION = "Costs"
 QMAKE_TARGET_COPYRIGHT = "Copyright (C) 2015 AbyleDotOrg"
@@ -51,7 +51,8 @@ SOURCES += main.cpp\
     csvimportdialog.cpp \
     myplots.cpp \
     mygraphicsview.cpp \
-    receiptview.cpp
+    receiptview.cpp \
+    generichelper.cpp
 
 HEADERS  += mainwindow.h \
     databaseapi.h \
@@ -61,7 +62,8 @@ HEADERS  += mainwindow.h \
     csvimportdialog.h \
     myplots.h \
     mygraphicsview.h \
-    receiptview.h
+    receiptview.h \
+    generichelper.h
 
 FORMS    += mainwindow.ui \
     categoryconfigdialog.ui \

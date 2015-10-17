@@ -47,12 +47,7 @@ private:
 
     QMap<int, int> cmap;
 
-    int processCSVLine(QString line, QSqlRecord &record);
-    QStringList parseLine(QString line);
-
     void prepareLocales();
-
-    MyQSqlRelationalTableModel *importmodel;
 
     int lineskip;
     bool invertValue;

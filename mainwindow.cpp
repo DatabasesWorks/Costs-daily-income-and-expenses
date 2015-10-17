@@ -11,6 +11,8 @@
 #include <QtConcurrent>
 #include <QSqlQuery>
 
+#include "generichelper.h"
+
 #include "databaseapi.h"
 
 #include "myqsqlrelationaltablemodel.h"
@@ -23,11 +25,46 @@
 #define STDSTATUSTIME 5000
 
 MainWindow::MainWindow(QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::MainWindow)
+    QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
 
+    setAcceptDrops(true);
+    setEnableUIDB(false);
+    ui->actionDatabase_ID->setChecked(true);
+
+    earningspalette.setColor(QPalette::Base,QColor(182, 215, 168, 255));
+    ui->totalEarningsLine->setPalette(earningspalette);
+    expensespalette.setColor(QPalette::Base,QColor(249, 106, 106, 255));
+    ui->totalCostsLine->setPalette(expensespalette);
+
+    setupProgressBarUI();
+    setupReceiptViewUI();
+    setupPlotUI();
+    setupGenericUI();
+    setupTableViewContectMenu();
+    setupRecentFiles();
+
+    readSettings();
+
+    if(isOpen) {
+        isOpen = false;
+        openDatabase(dbfilename);
+    }
+
+    setupSignals();
+    checkMenubar();
+
+    updateCalculations();
+}
+
+MainWindow::~MainWindow()
+{
+    delete ui;
+}
+
+void MainWindow::setupRecentFiles()
+{
     for (int i = 0; i < MaxRecentFiles; ++i) {
         recentFileActs[i] = new QAction(this);
         recentFileActs[i]->setVisible(false);
@@ -41,11 +78,10 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->menuFile->insertSeparator(ui->actionQuit);
 
     updateRecentFileActions();
+}
 
-    setEnableUIDB(false);
-
-    ui->actionDatabase_ID->setChecked(true);
-
+void MainWindow::setupProgressBarUI()
+{
     // Progress bar
     progressBar = new QProgressBar(ui->statusBar);
     progressBar->setAlignment(Qt::AlignRight);
@@ -53,29 +89,24 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->statusBar->addPermanentWidget(progressBar);
     progressBar->setValue(0);
     progressBar->hide();
+}
 
-    earningspalette.setColor(QPalette::Base,QColor(182, 215, 168, 255));
-    ui->totalEarningsLine->setPalette(earningspalette);
-
-    expensespalette.setColor(QPalette::Base,QColor(249, 106, 106, 255));
-    ui->totalCostsLine->setPalette(expensespalette);
-
-    readSettings();
-    setupSignals();
-
-    // Setup actions for QTableView context menu
-    setupTableViewContectMenu();
-
+void MainWindow::setupReceiptViewUI()
+{
     // Setup stuff for receipt view
     item = new QGraphicsPixmapItem;
     scene = new QGraphicsScene;
     view = new MyGraphicsView(scene);
     view->setGeometry(100, 100, 800, 500);
+}
 
-    setAcceptDrops(true);
-
+void MainWindow::setupPlotUI()
+{
     expincplot = new MyPlots;
+}
 
+void MainWindow::setupGenericUI()
+{
     // Setup Category QTableWidget
     ui->categoryTableWidget->setColumnCount(4);
     ui->categoryTableWidget->setHorizontalHeaderLabels(QStringList() << tr("Category")
@@ -85,13 +116,19 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->categoryTableWidget->setSortingEnabled(true);
     ui->categoryTableWidget->sortByColumn(0,Qt::AscendingOrder);
-
-    updateCalculations();
 }
 
-MainWindow::~MainWindow()
+void MainWindow::setupSignals()
 {
-    delete ui;
+    QObject::connect(ui->actionQuit, SIGNAL(triggered()), this, SLOT(close()));
+
+    QObject::connect(ui->tabWidget, &QTabWidget::currentChanged,
+                     this, &MainWindow::checkMenubar);
+
+    // Make row adjust to content every time we change the column width
+    // to make word warp work
+    QObject::connect(ui->expensesTableView->horizontalHeader(), &QHeaderView::sectionResized,
+    ui->expensesTableView, &QTableView::resizeRowsToContents);
 }
 
 void MainWindow::setupTableViewContectMenu()
@@ -354,19 +391,6 @@ void MainWindow::removeReceipt()
     }
 }
 
-void MainWindow::setupSignals()
-{
-    QObject::connect(ui->actionQuit, SIGNAL(triggered()), this, SLOT(close()));
-
-    QObject::connect(ui->tabWidget, &QTabWidget::currentChanged,
-                     this, &MainWindow::checkMenubar);
-
-    // Make row adjust to content every time we change the column width
-    // to make word warp work
-    QObject::connect(ui->expensesTableView->horizontalHeader(), &QHeaderView::sectionResized,
-    ui->expensesTableView, &QTableView::resizeRowsToContents);
-}
-
 void MainWindow::updateslot()
 {
     // QtConcurrent::run(this, &MainWindow::updateCalculations);
@@ -406,43 +430,22 @@ void MainWindow::expensesRowHeaderChanged(Qt::Orientation orientation, int first
 
 void MainWindow::writeSettings()
 {
-    QSettings settings("Abyle Org", "Costs");
+    GenericHelper::setSettingMainWindowSize(size());
+    GenericHelper::setSettingMainWindowPos(pos());
+    GenericHelper::setSettingCurrentTab(ui->tabWidget->currentIndex());
 
-    settings.beginGroup("MainWindow");
-    settings.setValue("size", size());
-    settings.setValue("pos", pos());
-    settings.setValue("currentTab", ui->tabWidget->currentIndex());
-    settings.endGroup();
-
-    ui->tabWidget->currentIndex();
-
-    settings.beginGroup("Database");
-    settings.setValue("isOpen", isOpen);
-    settings.setValue("dbfilename", dbfilename);
-    settings.endGroup();
+    GenericHelper::setSettingDatabaseIsOpen(isOpen);
+    GenericHelper::setSettingDatabaseFileName(dbfilename);
 }
 
 void MainWindow::readSettings()
 {
-    QSettings settings("Abyle Org", "Costs");
+    resize(GenericHelper::getSettingMainWindowSize());
+    move(GenericHelper::getSettingMainWindowPos());
+    ui->tabWidget->setCurrentIndex(GenericHelper::getSettingCurrentTab());
 
-    settings.beginGroup("Database");
-    isOpen = settings.value("isOpen").toBool();
-    dbfilename = settings.value("dbfilename").toString();
-    settings.endGroup();
-
-    if(isOpen) {
-        isOpen = false;
-        openDatabase(dbfilename);
-    }
-
-    settings.beginGroup("MainWindow");
-    resize(settings.value("size", QSize(400, 400)).toSize());
-    move(settings.value("pos", QPoint(200, 200)).toPoint());
-    ui->tabWidget->setCurrentIndex(settings.value("currentTab").toInt());
-    settings.endGroup();
-
-    checkMenubar();
+    isOpen = GenericHelper::getSettingDatabaseIsOpen();
+    dbfilename = GenericHelper::getSettingDatabaseFileName();
 }
 
 bool MainWindow::askClose()
@@ -661,7 +664,7 @@ void MainWindow::setCurrentFile(const QString &fileName)
     curFile = fileName;
     setWindowFilePath(curFile);
 
-    QSettings settings("Abyle Org", "Costs");
+    QSettings settings(GenericHelper::getCompanyName(), GenericHelper::getAppName());
     QStringList files = settings.value("recentFileList").toStringList();
     files.removeAll(fileName);
     files.prepend(fileName);
@@ -681,7 +684,7 @@ void MainWindow::setCurrentFile(const QString &fileName)
 
 void MainWindow::updateRecentFileActions()
 {
-    QSettings settings("Abyle Org", "Costs");
+    QSettings settings(GenericHelper::getCompanyName(), GenericHelper::getAppName());
     QStringList files = settings.value("recentFileList").toStringList();
 
     int numRecentFiles = qMin(files.size(), (int)MaxRecentFiles);
@@ -703,15 +706,21 @@ QString MainWindow::strippedName(const QString &fullFileName)
 
 void MainWindow::on_actionOpen_Database_triggered()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open Database"),"",
+    QString oldpath = GenericHelper::getSettingFileDialogPath();
+
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Open Database"), oldpath,
                                                     tr("SQLite DB (*.db)"));
-    if (!fileName.isEmpty())
+    if (!fileName.isEmpty()) {
         openDatabase(fileName);
+        GenericHelper::setSettingFileDialogPath(QFileInfo(fileName).absolutePath());
+    }
 }
 
 void MainWindow::on_actionNew_Database_triggered()
 {
-    QString fileName = QFileDialog::getSaveFileName(this, tr("New Database"),"",
+    QString oldpath = GenericHelper::getSettingFileDialogPath();
+
+    QString fileName = QFileDialog::getSaveFileName(this, tr("New Database"), oldpath,
                                                     tr("SQLite DB (*.db)"));
     QString errorstr;
     if (!fileName.isEmpty()) {
@@ -723,6 +732,8 @@ void MainWindow::on_actionNew_Database_triggered()
         } else {
             openDatabase(fileName);
         }
+
+        GenericHelper::setSettingFileDialogPath(QFileInfo(fileName).absolutePath());
     }
 }
 
@@ -1211,7 +1222,9 @@ QStringList MainWindow::parseLine(QString line, QString separator)
 
 void MainWindow::on_actionFrom_CSV_new_triggered()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Import CSV"),"",
+    QString oldpath = GenericHelper::getSettingCSVImportDialogPath();
+
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Import CSV"), oldpath,
                                                     tr("CSV (*.csv)"));
 
     if (!fileName.isEmpty()) {
@@ -1233,6 +1246,8 @@ void MainWindow::on_actionFrom_CSV_new_triggered()
         }
         delete dialog;
         dialog=0;
+
+        GenericHelper::setSettingCSVImportDialogPath(QFileInfo(fileName).absolutePath());
     }
 }
 
@@ -1576,7 +1591,55 @@ void MainWindow::on_actionReport_Bug_triggered()
 
 void MainWindow::on_actionCopy_triggered()
 {
-    // Implement copy
+    int t = expensesmodel->rowCount();
+    int b = -1;
+    int l = expensesmodel->columnCount();
+    int r = -1;
+
+    QList<QModelIndex> indexes = ui->expensesTableView->selectionModel()->selection().indexes();
+    foreach(QModelIndex index, indexes) {
+        t = qMin(t, index.row());
+        b = qMax(b, index.row());
+        l = qMin(l, index.column());
+        r = qMax(r, index.column());
+    }
+
+    if ( r <0 ) return;
+    if ( b <0 ) return;
+
+    QString textdata;
+
+    QString data = "<!--Start-->\n";
+    data += "<table>";
+
+    for (int row=t ;row<=b; row++) {
+        data += "<tr>\n";
+        for (int col=l ;col<=r; col++) {
+            QVariant v = expensesmodel->data(expensesmodel->index(row,col) );
+
+            if ( v.canConvert(QVariant::Double) ) {
+                data += "  <td x:num>";
+            } else {
+                data += "  <td>";
+            }
+
+            data += v.toString();
+            data += "</td>\n";
+
+            textdata += v.toString();
+            textdata += "\t";
+        }
+        data += "</tr>\n";
+        textdata += "\n";
+    }
+
+    data += "</table>";
+    data += "<!--End-->\n";
+
+    QMimeData *mimeData = new QMimeData;
+    mimeData->setText(textdata);
+    mimeData->setHtml(data);
+    QApplication::clipboard()->setMimeData(mimeData);
 }
 
 void MainWindow::on_actionGo_to_Top_triggered()
@@ -1593,4 +1656,14 @@ void MainWindow::on_actionGo_to_Bottom_triggered()
     while(expensesmodel->canFetchMore())
         expensesmodel->fetchMore();
     ui->expensesTableView->scrollToBottom();
+}
+
+void MainWindow::on_actionCut_triggered()
+{
+
+}
+
+void MainWindow::on_actionPaste_triggered()
+{
+
 }

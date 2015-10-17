@@ -66,14 +66,13 @@ protected:
     void dragMoveEvent(QDragMoveEvent* event);
     void dragLeaveEvent(QDragLeaveEvent* event);
 
-public slots:
+private slots:
     void customMenuRequested(QPoint pos);
     void addReceipt();
     void showReceipt();
     void saveReceipt();
     void removeReceipt();
 
-private slots:
     void on_actionAbout_Costs_triggered();
     void on_actionOpen_Database_triggered();
     void on_actionNew_Database_triggered();
@@ -100,6 +99,8 @@ private slots:
     void on_actionCopy_triggered();
     void on_actionGo_to_Top_triggered();
     void on_actionGo_to_Bottom_triggered();
+    void on_actionCut_triggered();
+    void on_actionPaste_triggered();
 
     void expensesRowHeaderChanged(Qt::Orientation orientation, int first,int last);
     void checkMenubar();
@@ -112,11 +113,47 @@ private slots:
 private:
     CalcStruct calcres;
 
+    // UI
     Ui::MainWindow *ui;
+    QProgressBar *progressBar;
+    MyPlots *expincplot;
+
+    void setupRecentFiles();
+    void setupProgressBarUI();
+    void setupReceiptViewUI();
+    void setupPlotUI();
+    void setupGenericUI();
+    void setupTableViewContectMenu();
+
+    void setupSignals();
+
+    // Income/Expenses color palettes
+    QPalette earningspalette;
+    QPalette expensespalette;
+
+    // Receipt view
+    QGraphicsPixmapItem *item;
+    QGraphicsScene *scene;
+    MyGraphicsView *view;
+
+    // recent file list
+    QString strippedName(const QString &fullFileName);
+    enum { MaxRecentFiles = 4 };
+    QAction *recentFileActs[MaxRecentFiles];
+    void setCurrentFile(const QString &fileName);
+    void updateRecentFileActions();
+    QString curFile;
+
+    // Context menu for TableView
+    QAction *showReceiptAct;
+    QAction *addReceiptAct;
+    QAction *saveReceiptAct;
+    QAction *removeReceiptAct;
+    QMenu *menu;
 
     MyQSqlRelationalTableModel *expensesmodel, *categoriesmodel, *paymentmethodmodel;
 
-    QProgressBar *progressBar;
+    QList<qint64> expensesHiddenRows;
 
     bool isOpen;
     QString dbfilename;
@@ -125,9 +162,6 @@ private:
 
     bool save();
     bool askClose();
-
-    void setupSignals();
-    void setupTableViewContectMenu();
 
     int openDatabase(QString fileName);
 
@@ -162,33 +196,6 @@ private:
     int getPaymentId(QString paymentstring);
     void fileToImportDragged(QString fileName);
     qreal parseValueString(QLocale locale, QString valuestring);
-
-    QList<qint64> expensesHiddenRows;
-
-    MyPlots *expincplot;
-
-    QPalette earningspalette;
-    QPalette expensespalette;
-
-    // Context menu for TableView
-    QAction *showReceiptAct;
-    QAction *addReceiptAct;
-    QAction *saveReceiptAct;
-    QAction *removeReceiptAct;
-    QMenu *menu;
-
-    // Receipt view
-    QGraphicsPixmapItem *item;
-    QGraphicsScene *scene;
-    MyGraphicsView *view;
-
-    // recent file list
-    QString strippedName(const QString &fullFileName);
-    enum { MaxRecentFiles = 4 };
-    QAction *recentFileActs[MaxRecentFiles];
-    void setCurrentFile(const QString &fileName);
-    void updateRecentFileActions();
-    QString curFile;
 };
 
 #endif // MAINWINDOW_H

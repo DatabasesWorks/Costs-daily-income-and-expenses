@@ -9,6 +9,8 @@
 #include <QSettings>
 #include <QDebug>
 
+#include "generichelper.h"
+
 CSVImportDialog::CSVImportDialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::CSVImportDialog)
@@ -173,7 +175,7 @@ void CSVImportDialog::on_lineskipSpinBox_valueChanged(int arg1)
 
 void CSVImportDialog::writeSettings()
 {
-    QSettings settings("Abyle Org", "Costs");
+    QSettings settings(GenericHelper::getCompanyName(), GenericHelper::getAppName());
 
     settings.beginGroup("CSVImportDialog");
     settings.setValue("amountChecked", ui->amountCheck->checkState());
@@ -201,7 +203,7 @@ void CSVImportDialog::writeSettings()
 
 void CSVImportDialog::readSettings()
 {
-    QSettings settings("Abyle Org", "Costs");
+    QSettings settings(GenericHelper::getCompanyName(), GenericHelper::getAppName());
 
     settings.beginGroup("CSVImportDialog");
     ui->amountCheck->setChecked(settings.value("amountChecked", true).toBool());
