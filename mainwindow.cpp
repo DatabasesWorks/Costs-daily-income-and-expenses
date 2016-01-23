@@ -33,11 +33,6 @@ MainWindow::MainWindow(QWidget *parent) :
     setEnableUIDB(false);
     ui->actionDatabase_ID->setChecked(true);
 
-    earningspalette.setColor(QPalette::Base,QColor(182, 215, 168, 255));
-    ui->totalEarningsLine->setPalette(earningspalette);
-    expensespalette.setColor(QPalette::Base,QColor(249, 106, 106, 255));
-    ui->totalCostsLine->setPalette(expensespalette);
-
     setupProgressBarUI();
     setupReceiptViewUI();
     setupPlotUI();
@@ -55,7 +50,7 @@ MainWindow::MainWindow(QWidget *parent) :
     setupSignals();
     checkMenubar();
 
-    updateCalculations();
+    emit doUpdate();
 }
 
 MainWindow::~MainWindow()
@@ -107,12 +102,17 @@ void MainWindow::setupPlotUI()
 
 void MainWindow::setupGenericUI()
 {
+    earningspalette.setColor(QPalette::Base,QColor(182, 215, 168, 255));
+    ui->totalEarningsLine->setPalette(earningspalette);
+    expensespalette.setColor(QPalette::Base,QColor(249, 106, 106, 255));
+    ui->totalCostsLine->setPalette(expensespalette);
+
     // Setup Category QTableWidget
     ui->categoryTableWidget->setColumnCount(4);
     ui->categoryTableWidget->setHorizontalHeaderLabels(QStringList() << tr("Category")
-                                                             << tr("Income")
-                                                             << tr("Expenses")
-                                                             << tr("Total"));
+                                                                     << tr("Income")
+                                                                     << tr("Expenses")
+                                                                     << tr("Total"));
 
     ui->categoryTableWidget->setSortingEnabled(true);
     ui->categoryTableWidget->sortByColumn(0,Qt::AscendingOrder);
@@ -127,8 +127,11 @@ void MainWindow::setupSignals()
 
     // Make row adjust to content every time we change the column width
     // to make word warp work
-    QObject::connect(ui->expensesTableView->horizontalHeader(), &QHeaderView::sectionResized,
-    ui->expensesTableView, &QTableView::resizeRowsToContents);
+    // QObject::connect(ui->expensesTableView->horizontalHeader(), &QHeaderView::sectionResized,
+    // ui->expensesTableView, &QTableView::resizeRowsToContents);
+
+    QObject::connect(this, SIGNAL(doUpdate()) , this, SLOT(updateCalculations()));
+    QObject::connect(this, SIGNAL(doUpdateUI()) , this, SLOT(updateCalculationsUI()));
 }
 
 void MainWindow::setupTableViewContectMenu()
@@ -137,10 +140,10 @@ void MainWindow::setupTableViewContectMenu()
     addReceiptAct = new QAction("Add receipt...", this);
     saveReceiptAct = new QAction("Save receipt...", this);
     removeReceiptAct = new QAction("Remove receipt", this);
-    connect(addReceiptAct, SIGNAL(triggered()), this, SLOT(addReceipt()));
-    connect(showReceiptAct, SIGNAL(triggered()), this, SLOT(showReceipt()));
-    connect(saveReceiptAct, SIGNAL(triggered()), this, SLOT(saveReceipt()));
-    connect(removeReceiptAct, SIGNAL(triggered()), this, SLOT(removeReceipt()));
+    QObject::connect(addReceiptAct, SIGNAL(triggered()), this, SLOT(addReceipt()));
+    QObject::connect(showReceiptAct, SIGNAL(triggered()), this, SLOT(showReceipt()));
+    QObject::connect(saveReceiptAct, SIGNAL(triggered()), this, SLOT(saveReceipt()));
+    QObject::connect(removeReceiptAct, SIGNAL(triggered()), this, SLOT(removeReceipt()));
 
     menu = new QMenu(this);
     menu->addAction(showReceiptAct);
@@ -212,7 +215,7 @@ void MainWindow::addReceipt()
 
     selmodel = ui->expensesTableView->selectionModel();
     current = selmodel->currentIndex();
-    int id = expensesmodel->record(current.row()).value("id").toInt();
+    int id = expensesmodel->record(proxymodel->mapToSource(current).row()).value("id").toInt();
 
     if(expensesmodel->isDirty()) {
         QMessageBox::StandardButton ret;
@@ -252,7 +255,7 @@ void MainWindow::showReceipt()
 
     selmodel = ui->expensesTableView->selectionModel();
     current = selmodel->currentIndex();
-    int id = expensesmodel->record(current.row()).value("id").toInt();
+    int id = expensesmodel->record(proxymodel->mapToSource(current).row()).value("id").toInt();
 
     if(expensesmodel->isDirty()) {
         QMessageBox::StandardButton ret;
@@ -315,7 +318,7 @@ void MainWindow::saveReceipt()
 
     selmodel = ui->expensesTableView->selectionModel();
     current = selmodel->currentIndex();
-    int id = expensesmodel->record(current.row()).value("id").toInt();
+    int id = expensesmodel->record(proxymodel->mapToSource(current).row()).value("id").toInt();
 
     if(expensesmodel->isDirty()) {
         QMessageBox::StandardButton ret;
@@ -373,7 +376,7 @@ void MainWindow::removeReceipt()
 
     selmodel = ui->expensesTableView->selectionModel();
     current = selmodel->currentIndex();
-    int id = expensesmodel->record(current.row()).value("id").toInt();
+    int id = expensesmodel->record(proxymodel->mapToSource(current).row()).value("id").toInt();
 
     QMessageBox::StandardButton ret;
     ret = QMessageBox::warning(this, tr("Costs"),
@@ -389,12 +392,6 @@ void MainWindow::removeReceipt()
             QMessageBox::information(this, "Remove receipt", query.lastError().text());
          }
     }
-}
-
-void MainWindow::updateslot()
-{
-    // QtConcurrent::run(this, &MainWindow::updateCalculations);
-    updateCalculations();
 }
 
 void MainWindow::checkMenubar()
@@ -518,21 +515,30 @@ int MainWindow::createExpensesView()
     expensesmodel->setColColors(5, QColor(239, 239, 239, 255)); // set 'Category' column color
     expensesmodel->setColColors(6, QColor(239, 239, 239, 255)); // set 'Payment Method' column color
 
-    ui->expensesTableView->setModel(expensesmodel);
-    ui->expensesTableView->setItemDelegate(new QSqlRelationalDelegate(ui->expensesTableView));
+    proxymodel = new QSortFilterProxyModel;
+    proxymodel->setSourceModel(expensesmodel);
+
+    ui->expensesTableView->setModel(proxymodel);
+
+    categoryDelegate = new MySqlRelationalDelegate;
+    paymentMethodDelegate = new MySqlRelationalDelegate;
+
+    ui->expensesTableView->setItemDelegateForColumn(5, categoryDelegate);
+    ui->expensesTableView->setItemDelegateForColumn(6, paymentMethodDelegate);
     ui->expensesTableView->hideColumn(0); // Don't show id
     ui->expensesTableView->resizeColumnsToContents();
 
     ui->expensesTableView->setEnabled(true);
+    ui->expensesTableView->setSortingEnabled(true);
 
     expensesmodel->setReadOnly(7, true);
 
     // Set amount column to number type and to 2 decimal places
     expensesmodel->setNumber(1, true, 2);
 
-    // Connect updateslot
+    // Connect updateCalculations
     QObject::connect(expensesmodel, &QSqlRelationalTableModel::dataChanged,
-                     this, &MainWindow::updateslot);
+                     this, &MainWindow::updateCalculations);
 
     QObject::connect(expensesmodel, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
             this, SLOT(expensesRowHeaderChanged(Qt::Orientation,int,int)));
@@ -574,9 +580,9 @@ int MainWindow::createCategoriesView()
     categoriesmodel->setHeaderData(1, Qt::Horizontal, "Category");
     categoriesmodel->setHeaderData(2, Qt::Horizontal, "Description");
 
-    // Connect updateslot
+    // Connect updateCalculations
     QObject::connect(categoriesmodel, &QSqlRelationalTableModel::dataChanged,
-                     this, &MainWindow::updateslot);
+                     this, &MainWindow::updateCalculations);
 
     return 0;
 }
@@ -592,9 +598,9 @@ int MainWindow::createPaymentsView()
     paymentmethodmodel->setHeaderData(1, Qt::Horizontal, "Category");
     paymentmethodmodel->setHeaderData(2, Qt::Horizontal, "Description");
 
-    // Connect updateslot
+    // Connect updateCalculations
     QObject::connect(paymentmethodmodel, &QSqlRelationalTableModel::dataChanged,
-                     this, &MainWindow::updateslot);
+                     this, &MainWindow::updateCalculations);
 
     return 0;
 }
@@ -610,6 +616,25 @@ int MainWindow::openDatabase(QString fileName)
 {
     bool wasopen=isOpen;
     if(QFile(fileName).exists()){
+        // Backup
+        if (GenericHelper::getSettingBackupDatabase()) {
+            QFileInfo fileInfo(fileName);
+            QDateTime curDateTime = QDateTime::currentDateTime();
+            QString curDateTimeString = curDateTime.toString("yyyyMMdd_hhmmss");
+            QString backupFileBaseName = fileInfo.baseName();
+            QString backupFileSuffix = fileInfo.completeSuffix();
+            QString backupFilePath = fileInfo.absolutePath();
+            QString backupFileName = backupFilePath + QDir::separator() + backupFileBaseName + "_" + curDateTimeString + "." + backupFileSuffix;
+
+            qDebug() << backupFileName;
+
+            if (! GenericHelper::copyFile(fileName, backupFileName, false)) {
+                QMessageBox::warning(this, tr("Costs"),
+                                     tr("Error creating Backup of Database: %1")
+                                     .arg(fileName));
+            }
+        }
+
         sqliteDb1 = new SqliteDatabase(fileName);
         isOpen=false;
         //Show table for expenses
@@ -631,19 +656,15 @@ int MainWindow::openDatabase(QString fileName)
 
         ui->statusBar->showMessage(tr("Database opened"), STDSTATUSTIME);
 
-        // Read all the data
-        while(expensesmodel->canFetchMore())
-            expensesmodel->fetchMore();
-
-        updateCalculations();
+        emit doUpdate();
 
         // Scroll to the end
         ui->expensesTableView->resizeColumnsToContents();
         if(ui->expensesTableView->columnWidth(3) > 0.85*this->width()) {
             ui->expensesTableView->setColumnWidth(3, 0.85*this->width() );
         }
-        ui->expensesTableView->resizeRowsToContents();
-        ui->expensesTableView->scrollToTop();
+        // ui->expensesTableView->resizeRowsToContents();
+        // ui->expensesTableView->scrollToTop();
         ui->expensesTableView->scrollToBottom();
 
         setCurrentFile(fileName);
@@ -788,13 +809,9 @@ void MainWindow::on_actionSave_triggered()
     if( expensesmodel->isDirty() )
         uhideAllRows(ui->expensesTableView, expensesHiddenRows);
         submit(expensesmodel);
-        expensesmodel->select();
-    if( categoriesmodel->isDirty() ) {
-        submit(categoriesmodel);
-        expensesmodel->relationModel(5)->select();
-    }
+        // expensesmodel->select();
 
-    updateCalculations();
+    emit doUpdate();
 }
 
 bool MainWindow::save()
@@ -847,10 +864,8 @@ void MainWindow::updateCalculations()
         qreal totalexpenses=0, totalincome=0;
 
         // Get all the data
-        while(expensesmodel->canFetchMore())
-            expensesmodel->fetchMore();
-
-        int rowcount = expensesmodel->rowCount();
+        // while(expensesmodel->canFetchMore())
+        //    expensesmodel->fetchMore();
 
         int pbvalue;
 
@@ -862,13 +877,18 @@ void MainWindow::updateCalculations()
 
         int expcount=0, earncount=0;
         qreal curvalue=0;
+
+        int rowcount = expensesmodel->rowCount();
+        qDebug() << rowcount;
         for (int row=0; row < rowcount; row++) {
             //  progressbar stuff
             pbvalue = 50/(double)rowcount*(row+1);
             progressBar->setValue(pbvalue);
 
-            curvalue = expensesmodel->record(row).value("amount").toDouble();
-            curdate = QDate::fromString(expensesmodel->record(row).value("date").toString(),"yyyy-MM-dd");
+            // curvalue = expensesmodel->record(row).value("amount").toDouble();
+            curvalue = expensesmodel->data(expensesmodel->index(row, 1), Qt::DisplayRole).toDouble();
+            curdate = QDate::fromString(expensesmodel->data(expensesmodel->index(row, 1), Qt::DisplayRole).toString(),"yyyy-MM-dd");
+            // curdate = QDate::fromString(expensesmodel->record(row).value("date").toString(),"yyyy-MM-dd");
             if(curdate<firstdate)
                 firstdate = curdate;
             if( curvalue < 0 ) {
@@ -911,6 +931,8 @@ void MainWindow::updateCalculations()
         progressBar->hide();
         ui->statusBar->showMessage(tr("Calculations updated"), STDSTATUSTIME);
     }
+
+    emit doUpdateUI();
 }
 
 void MainWindow::updateCalculationsUI()
@@ -926,6 +948,8 @@ void MainWindow::updateCalculationsUI()
     ui->netIncomeLine->setText(QString::number(calcres.totalNet, 'f', 2));
 
     ui->avgDailyCostsLine->setText(QString::number(calcres.perDayNet, 'f', 2));
+    ui->avgDailyExpensesLine->setText(QString::number(calcres.perDayExpenses, 'f', 2));
+    ui->avgDailyEarningsLine->setText(QString::number(calcres.perDayIncome, 'f', 2));
 
     ui->expectedCostsPerMonthLine->setText(QString::number(calcres.perMonthNet, 'f', 2));
 
@@ -951,7 +975,7 @@ void MainWindow::updateCalculationsUI()
 
 void MainWindow::on_actionUpdate_triggered()
 {
-    updateCalculations();
+    emit doUpdate();
 }
 
 void MainWindow::submit(MyQSqlRelationalTableModel *model)
@@ -1009,7 +1033,7 @@ void MainWindow::on_actionDelete_Entry_triggered()
         break;
     }
 
-    updateCalculations();
+    emit doUpdate();
 }
 
 void MainWindow::on_actionFull_Screen_triggered()
@@ -1085,8 +1109,8 @@ int MainWindow::getCatId(QString categorystring)
 {
     // Search category and return the id
     // Get all the data
-    while(categoriesmodel->canFetchMore())
-        categoriesmodel->fetchMore();
+  //  while(categoriesmodel->canFetchMore())
+   //     categoriesmodel->fetchMore();
 
     int rowcount = categoriesmodel->rowCount();
 
@@ -1126,8 +1150,8 @@ int MainWindow::getPaymentId(QString paymentstring)
 {
     // Search payment and return the id
     // Get all the data
-    while(paymentmethodmodel->canFetchMore())
-        paymentmethodmodel->fetchMore();
+   // while(paymentmethodmodel->canFetchMore())
+    //    paymentmethodmodel->fetchMore();
 
     int rowcount = paymentmethodmodel->rowCount();
 
@@ -1291,11 +1315,11 @@ int MainWindow::importCSVFile(MyQSqlRelationalTableModel *model, QString fileNam
 
     // Begin with disabling the updateCalculation slot
     QObject::disconnect(expensesmodel, &QSqlRelationalTableModel::dataChanged,
-                     this, &MainWindow::updateslot);
+                     this, &MainWindow::updateCalculations);
     QObject::disconnect(categoriesmodel, &QSqlRelationalTableModel::dataChanged,
-                     this, &MainWindow::updateslot);
+                     this, &MainWindow::updateCalculations);
     QObject::disconnect(paymentmethodmodel, &QSqlRelationalTableModel::dataChanged,
-                     this, &MainWindow::updateslot);
+                     this, &MainWindow::updateCalculations);
 
     QFile file(fileName);
     if (!fileName.isEmpty()) {
@@ -1344,16 +1368,13 @@ int MainWindow::importCSVFile(MyQSqlRelationalTableModel *model, QString fileNam
 
     // Enable the updateCalculation slot again
     QObject::connect(expensesmodel, &QSqlRelationalTableModel::dataChanged,
-                     this, &MainWindow::updateslot);
+                     this, &MainWindow::updateCalculations);
     QObject::connect(categoriesmodel, &QSqlRelationalTableModel::dataChanged,
-                     this, &MainWindow::updateslot);
+                     this, &MainWindow::updateCalculations);
     QObject::connect(paymentmethodmodel, &QSqlRelationalTableModel::dataChanged,
-                     this, &MainWindow::updateslot);
+                     this, &MainWindow::updateCalculations);
 
-    // Update calculations
-    updateCalculations();
-
-    ui->expensesTableView->resizeColumnsToContents();
+    emit doUpdate();
 
     return 0;
 }
@@ -1645,16 +1666,16 @@ void MainWindow::on_actionCopy_triggered()
 void MainWindow::on_actionGo_to_Top_triggered()
 {
     // Read all the data
-    while(expensesmodel->canFetchMore())
-        expensesmodel->fetchMore();
+//    while(expensesmodel->canFetchMore())
+//        expensesmodel->fetchMore();
     ui->expensesTableView->scrollToTop();
 }
 
 void MainWindow::on_actionGo_to_Bottom_triggered()
 {
     // Read all the data
-    while(expensesmodel->canFetchMore())
-        expensesmodel->fetchMore();
+//    while(expensesmodel->canFetchMore())
+//        expensesmodel->fetchMore();
     ui->expensesTableView->scrollToBottom();
 }
 
@@ -1666,4 +1687,10 @@ void MainWindow::on_actionCut_triggered()
 void MainWindow::on_actionPaste_triggered()
 {
 
+}
+
+void MainWindow::on_lineEditFilter_textChanged(const QString &arg1)
+{
+    proxymodel->setFilterKeyColumn(-1);
+    proxymodel->setFilterRegExp(arg1);
 }

@@ -11,11 +11,13 @@
 #include <QDragEnterEvent>
 #include <QDragLeaveEvent>
 #include <QMap>
+#include <QSortFilterProxyModel>
 
 #include "myqsqlrelationaltablemodel.h"
 #include "databaseapi.h"
 #include "myplots.h"
 #include "mygraphicsview.h"
+#include "mysqlrelationaldelegate.h"
 
 namespace Ui {
 class MainWindow;
@@ -102,13 +104,21 @@ private slots:
     void on_actionCut_triggered();
     void on_actionPaste_triggered();
 
+    void updateCalculations();
+    void updateCalculationsUI();
+
     void expensesRowHeaderChanged(Qt::Orientation orientation, int first,int last);
     void checkMenubar();
-    void updateslot();
 
     void openRecentFile();
 
     void tabDoubleClicked(QModelIndex index);
+
+    void on_lineEditFilter_textChanged(const QString &arg1);
+
+signals:
+    void doUpdate();
+    void doUpdateUI();
 
 private:
     CalcStruct calcres;
@@ -152,6 +162,9 @@ private:
     QMenu *menu;
 
     MyQSqlRelationalTableModel *expensesmodel, *categoriesmodel, *paymentmethodmodel;
+    QSortFilterProxyModel *proxymodel;
+
+    MySqlRelationalDelegate *categoryDelegate, *paymentMethodDelegate;
 
     QList<qint64> expensesHiddenRows;
 
@@ -172,8 +185,6 @@ private:
     void closeEvent(QCloseEvent *event);
 
     void calcCategory();
-    void updateCalculations();
-    void updateCalculationsUI();
 
     void submit(MyQSqlRelationalTableModel *model);
 

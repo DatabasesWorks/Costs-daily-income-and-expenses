@@ -2,6 +2,7 @@
 #define GENERICHELPER_H
 
 #include <QObject>
+#include <QFile>
 
 class GenericHelper
 {
@@ -29,6 +30,11 @@ public:
 
     static void setSettingCSVImportDialogPath(QString filepath);
     static QString getSettingCSVImportDialogPath();
+
+    static bool getSettingBackupDatabase();
+
+    static bool copyFile(QFile inFile, QFile outFile, bool overwrite=false);
+    static bool copyFile(QString in, QString out, bool overwrite=false);
 };
 
 #endif // GENERICHELPER_H

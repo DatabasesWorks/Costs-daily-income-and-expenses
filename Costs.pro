@@ -13,7 +13,7 @@ TEMPLATE = app
 
 VERSION_MAJOR = 0
 VERSION_MINOR = 0
-VERSION_PATCH = 5
+VERSION_PATCH = 6
 VERSION_BUILD = 0
 
 # Get build from file
@@ -52,7 +52,10 @@ SOURCES += main.cpp\
     myplots.cpp \
     mygraphicsview.cpp \
     receiptview.cpp \
-    generichelper.cpp
+    generichelper.cpp \
+    dialogoptions.cpp \
+    mysqlrelationaldelegate.cpp \
+    sqlaccounttablemodel.cpp
 
 HEADERS  += mainwindow.h \
     databaseapi.h \
@@ -63,13 +66,17 @@ HEADERS  += mainwindow.h \
     myplots.h \
     mygraphicsview.h \
     receiptview.h \
-    generichelper.h
+    generichelper.h \
+    dialogoptions.h \
+    mysqlrelationaldelegate.h \
+    sqlaccounttablemodel.h
 
 FORMS    += mainwindow.ui \
     categoryconfigdialog.ui \
     paymentmethodsconfigdialog.ui \
     csvimportdialog.ui \
-    receiptview.ui
+    receiptview.ui \
+    dialogoptions.ui
 
 RESOURCES += \
     icons.qrc

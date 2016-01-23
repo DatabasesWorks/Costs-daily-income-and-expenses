@@ -4,6 +4,8 @@
 #include <QSize>
 #include <QPoint>
 #include <QString>
+#include <QFile>
+#include <QDebug>
 
 QString GenericHelper::getAppName()
 {
@@ -155,4 +157,48 @@ QString GenericHelper::getSettingCSVImportDialogPath()
     settings.endGroup();
 
     return filepath;
+}
+
+bool GenericHelper::getSettingBackupDatabase()
+{
+    bool backup;
+
+    QSettings settings(GenericHelper::getCompanyName(), GenericHelper::getAppName());
+    settings.beginGroup("MainWindow");
+    backup = settings.value("backupDatabase", true).toBool();
+    settings.endGroup();
+
+    return backup;
+}
+
+bool GenericHelper::copyFile(QFile inFile, QFile outFile, bool overwrite)
+{
+    if ( ! outFile.exists() ) {
+        return inFile.copy(outFile.fileName());
+    } else if (overwrite) {
+        if( outFile.remove() ) {
+            return inFile.copy(outFile.fileName());
+        }
+    } else {
+        return false;
+    }
+
+    return false;
+}
+
+bool GenericHelper::copyFile(QString in, QString out, bool overwrite)
+{
+    QFile inFile(in);
+    QFile outFile(out);
+    if (! outFile.exists() ) {
+        return inFile.copy(outFile.fileName());
+    } else if (overwrite) {
+        if( outFile.remove() ) {
+            return inFile.copy(outFile.fileName());
+        }
+    } else {
+        return false;
+    }
+
+    return false;
 }
